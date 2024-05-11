@@ -88,8 +88,9 @@ void UAbilityTask_PlayMontageByTagAndWait::OnMontageEnded(UAnimMontage* Montage,
 UAbilityTask_PlayMontageByTagAndWait* UAbilityTask_PlayMontageByTagAndWait::CreatePlayMontageByTagAndWaitProxy(
 	UGameplayAbility* OwningAbility, FName TaskInstanceName, FGameplayTag MontageTag, FGameplayTagContainer EventTags,
 	float Rate, FName StartSection, bool bStopWhenAbilityEnds, float AnimRootMotionTranslationScale,
-	float StartTimeSeconds, bool bOverrideBlendIn, FMontageBlendSettings BlendInOverride,
-	bool bAllowInterruptAfterBlendOut, float OverrideBlendOutTimeOnCancelAbility, float	OverrideBlendOutTimeOnEndAbility)
+	float StartTimeSeconds, bool bDrivenMontagesMatchDriverDuration, bool bOverrideBlendIn,
+	FMontageBlendSettings BlendInOverride, bool bAllowInterruptAfterBlendOut, float OverrideBlendOutTimeOnCancelAbility, float
+	OverrideBlendOutTimeOnEndAbility)
 {
 	UAbilitySystemGlobals::NonShipping_ApplyGlobalAbilityScaler_Rate(Rate);
 
@@ -125,6 +126,7 @@ UAbilityTask_PlayMontageByTagAndWait* UAbilityTask_PlayMontageByTagAndWait::Crea
 	MyObj->bStopWhenAbilityEnds = bStopWhenAbilityEnds;
 	MyObj->bAllowInterruptAfterBlendOut = bAllowInterruptAfterBlendOut;
 	MyObj->StartTimeSeconds = StartTimeSeconds;
+	MyObj->bDrivenMontagesMatchDriverDuration = bDrivenMontagesMatchDriverDuration;
 	MyObj->bOverrideBlendIn = bOverrideBlendIn;
 	MyObj->BlendInOverride = BlendInOverride;
 	MyObj->OverrideBlendOutTimeOnCancelAbility = OverrideBlendOutTimeOnCancelAbility;
@@ -135,7 +137,9 @@ UAbilityTask_PlayMontageByTagAndWait* UAbilityTask_PlayMontageByTagAndWait::Crea
 
 float UAbilityTask_PlayMontageByTagAndWait::PlayDrivenMontageForMesh(UPlayTagAbilitySystemComponent* ASC, const float Duration, const FDrivenMontagePair& Montage, const bool bReplicate) const
 {
-	const float ScaledRate = Rate * UPlayMontageByTagLib::GetMontagePlayRateScaledByDuration(Montage.Montage, Duration);
+	const float ScaledRate = bDrivenMontagesMatchDriverDuration ?
+		Rate * UPlayMontageByTagLib::GetMontagePlayRateScaledByDuration(Montage.Montage, Duration)
+		: Rate;
 	
 	return ASC->PlayMontageForMesh(
 		Ability, Montage.Mesh, Ability->GetCurrentActivationInfo(), Montage.Montage, ScaledRate,

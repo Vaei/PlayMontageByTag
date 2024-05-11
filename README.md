@@ -60,6 +60,9 @@ Your next step will be to pass in a `FGameplayTag` for `MontageTag` and factor t
 
 ### 1.1.0
 * Added driven montage replication
+* Added blend in overrides
+* Added event tag callback
+* Added option to scale driven montages to driver duration
 
 ### 1.0.0
 * Release

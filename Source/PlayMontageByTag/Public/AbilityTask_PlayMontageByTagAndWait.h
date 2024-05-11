@@ -58,6 +58,7 @@ public:
 	 * @param AnimRootMotionTranslationScale Change to modify size of root motion or set to 0 to block it entirely
 	 * @param bOverrideBlendIn If true apply BlendInOverride settings instead of the settings assigned to the montage
 	 * @param StartTimeSeconds Starting time offset in montage, this will be overridden by StartSection if that is also set
+	 * @param bDrivenMontagesMatchDriverDuration If true, all driven montages will run for the same duration as the driver montage
 	 * @param bAllowInterruptAfterBlendOut If true, you can receive OnInterrupted after an OnBlendOut started (otherwise OnInterrupted will not fire when interrupted, but you will not get OnComplete).
 	 * @param OverrideBlendOutTimeOnCancelAbility If >= 0 it will override the blend out time when ability is cancelled.
 	 * @param OverrideBlendOutTimeOnEndAbility If >= 0 it will override the blend out time when ability ends.
@@ -67,7 +68,7 @@ public:
 	static UAbilityTask_PlayMontageByTagAndWait* CreatePlayMontageByTagAndWaitProxy(UGameplayAbility* OwningAbility,
 		FName TaskInstanceName, FGameplayTag MontageTag, FGameplayTagContainer EventTags, float Rate = 1.f, 
 		FName StartSection = NAME_None, bool bStopWhenAbilityEnds = true, float AnimRootMotionTranslationScale = 1.f,
-		float StartTimeSeconds = 0.f, bool bOverrideBlendIn = false, FMontageBlendSettings BlendInOverride = FMontageBlendSettings(), bool bAllowInterruptAfterBlendOut = false,
+		float StartTimeSeconds = 0.f, bool bDrivenMontagesMatchDriverDuration = true, bool bOverrideBlendIn = false, FMontageBlendSettings BlendInOverride = FMontageBlendSettings(), bool bAllowInterruptAfterBlendOut = false,
 		float OverrideBlendOutTimeOnCancelAbility = -1.f, float OverrideBlendOutTimeOnEndAbility = -1.f);
 
 	float PlayDrivenMontageForMesh(UPlayTagAbilitySystemComponent* ASC, float Duration,
@@ -113,6 +114,9 @@ protected:
 	UPROPERTY()
 	float StartTimeSeconds;
 
+	UPROPERTY()
+	bool bDrivenMontagesMatchDriverDuration;
+	
 	UPROPERTY()
 	bool bOverrideBlendIn;
 	
