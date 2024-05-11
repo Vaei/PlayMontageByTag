@@ -10,7 +10,7 @@ Supports:
 
 If you want to use blueprint, you need to add this manually by adding a `BlueprintImplementableEvent` that `IPlayMontageByTagInterface::GetAbilityMontagesByTag` calls, otherwise C++ is required.
 
-![node](https://github.com/Vaei/repo_files/blob/main/PlayerMoveTo/gameplay_playermoveto.png)
+![node](https://github.com/Vaei/repo_files/blob/main/PlayMontageByTag/node.png)
 
 ## Setup
 
