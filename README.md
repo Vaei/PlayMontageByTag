@@ -64,6 +64,9 @@ Now you can add a `PlayMontageByTagAndWait` node to your ability blueprint and i
 
 Your next step will be to pass in a `FGameplayTag` for `MontageTag` and factor that in for `GetAbilityMontagesByTag`. For example `MontageTag.Weapon.SMG.Reload`.
 
+## Notes
+Code was used from [GASShooter](https://github.com/tranek/GASShooter/)
+
 ## Changelog
 
 ### 1.1.0
