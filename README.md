@@ -1,6 +1,9 @@
 # Play Montage By Tag
 
-Gives you ability nodes to play montages by tag.
+Gives you ability nodes to play multiple montages on multiple meshes using only an `FGameplayTag` and `IPlayMontageByTagInterface::GetAbilityMontagesByTag(const FGameplayTag& MontageTag, UAnimMontage*& DriverMontage,
+	FDrivenMontages& DrivenMontages) const`.
+
+Supports replication, event tags, override blend-in settings programmatically, and has the concept of Driver and Driven montages, where Driven montages can optionally match the animation duration of the Driver montage.
 
 If you want to use blueprint, you need to add this manually by adding a `BlueprintImplementableEvent` that `IPlayMontageByTagInterface::GetAbilityMontagesByTag` calls.
 
