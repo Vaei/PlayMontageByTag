@@ -1,7 +1,6 @@
 # Play Montage By Tag
 
-Gives you ability nodes to play multiple montages on multiple meshes using only an `FGameplayTag` and `IPlayMontageByTagInterface::GetAbilityMontagesByTag(const FGameplayTag& MontageTag, UAnimMontage*& DriverMontage,
-	FDrivenMontages& DrivenMontages) const`.
+Provides the ability task node `Play Montage by Tag and Wait` to play multiple montages on multiple meshes using only an `FGameplayTag` and `IPlayMontageByTagInterface::GetAbilityMontagesByTag`.
 
 Supports:
  * Montage Replication
@@ -11,11 +10,13 @@ Supports:
 
 If you want to use blueprint, you need to add this manually by adding a `BlueprintImplementableEvent` that `IPlayMontageByTagInterface::GetAbilityMontagesByTag` calls, otherwise C++ is required.
 
+![node](https://github.com/Vaei/repo_files/blob/main/PlayerMoveTo/gameplay_playermoveto.png)
+
 ## Setup
 
 ### Project
 
-You will need to include PlayMontageByTag in both your .uproject and your `Build.cs` `PublicDependencyModuleNames`
+You will need to include `"PlayMontageByTag"` in both your .uproject and your `Build.cs` `PublicDependencyModuleNames`
 
 
 ### Ability System
