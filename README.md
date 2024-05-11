@@ -3,9 +3,13 @@
 Gives you ability nodes to play multiple montages on multiple meshes using only an `FGameplayTag` and `IPlayMontageByTagInterface::GetAbilityMontagesByTag(const FGameplayTag& MontageTag, UAnimMontage*& DriverMontage,
 	FDrivenMontages& DrivenMontages) const`.
 
-Supports replication, event tags, override blend-in settings programmatically, and has the concept of Driver and Driven montages, where Driven montages can optionally match the animation duration of the Driver montage.
+Supports:
+ * Montage Replication
+ * Event Tags
+ * Override blend-in settings programmatically
+ * Driver and Driven montages (Driven montages can match the animation duration of the Driver montage)
 
-If you want to use blueprint, you need to add this manually by adding a `BlueprintImplementableEvent` that `IPlayMontageByTagInterface::GetAbilityMontagesByTag` calls.
+If you want to use blueprint, you need to add this manually by adding a `BlueprintImplementableEvent` that `IPlayMontageByTagInterface::GetAbilityMontagesByTag` calls, otherwise C++ is required.
 
 ## Setup
 
