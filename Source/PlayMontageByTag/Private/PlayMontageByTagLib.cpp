@@ -32,8 +32,8 @@ void UPlayMontageByTagLib::PlayDrivenMontage(float Duration, float Rate, const F
 		return;
 	}
 
-	if (UAnimInstance* AnimInstance = Montage.SkeletalMeshComponent ?
-		Montage.SkeletalMeshComponent->GetAnimInstance() : nullptr)
+	if (UAnimInstance* AnimInstance = Montage.Mesh ?
+		Montage.Mesh->GetAnimInstance() : nullptr)
 	{
 		// Returns MontageLength which ignores Rate, so we must scale by Rate again
 		const float ScaledDuration = GetMontagePlayRateScaledByDuration(Montage.Montage, Duration);
@@ -86,8 +86,8 @@ void UPlayMontageByTagLib::StopMontage(float BlendOutTime, const FDrivenMontageP
 		return;
 	}
 
-	if (UAnimInstance* AnimInstance = Montage.SkeletalMeshComponent ?
-		Montage.SkeletalMeshComponent->GetAnimInstance() : nullptr)
+	if (UAnimInstance* AnimInstance = Montage.Mesh ?
+		Montage.Mesh->GetAnimInstance() : nullptr)
 	{
 		AnimInstance->Montage_Stop(BlendOutTime, Montage.Montage);
 	}

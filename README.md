@@ -6,7 +6,18 @@ If you want to use blueprint, you need to add this manually by adding a `Bluepri
 
 ## Setup
 
+### Project
+
 You will need to include PlayMontageByTag in both your .uproject and your `Build.cs` `PublicDependencyModuleNames`
+
+
+### Ability System
+
+Either use `UPlayTagAbilitySystemComponent` or derive your own `UAbilitySystemComponent` from it.
+
+Derive your gameplay abilities from `UPlayTagGameplayAbility`.
+
+### Actor
 
 Implement the `IPlayMontageByTagInterface` interface to your Avatar Actor
 
@@ -46,6 +57,9 @@ Now you can add a `PlayMontageByTagAndWait` node to your ability blueprint and i
 Your next step will be to pass in a `FGameplayTag` for `MontageTag` and factor that in for `GetAbilityMontagesByTag`. For example `MontageTag.Weapon.SMG.Reload`.
 
 ## Changelog
+
+### 1.1.0
+* Added driven montage replication
 
 ### 1.0.0
 * Release

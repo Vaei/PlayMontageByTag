@@ -13,14 +13,14 @@ struct PLAYMONTAGEBYTAG_API FDrivenMontagePair
 
 	FDrivenMontagePair(UAnimMontage* InMontage = nullptr, USkeletalMeshComponent* InSkeletalMeshComponent = nullptr)
 		: Montage(InMontage)
-		, SkeletalMeshComponent(InSkeletalMeshComponent)
+		, Mesh(InSkeletalMeshComponent)
 	{}
 
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> Montage;
 
 	UPROPERTY()
-	TObjectPtr<USkeletalMeshComponent> SkeletalMeshComponent;
+	TObjectPtr<USkeletalMeshComponent> Mesh;
 };
 
 USTRUCT()

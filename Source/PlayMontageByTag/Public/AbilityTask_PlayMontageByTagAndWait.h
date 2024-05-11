@@ -3,12 +3,13 @@
 
 #include "CoreMinimal.h"
 #include "PlayMontageByTagTypes.h"
+#include "PlayTagAbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask.h"
 #include "Animation/AnimInstance.h"
 #include "AbilityTask_PlayMontageByTagAndWait.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMontageTagWaitDelegate);
-
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMontageTagWaitEventDelegate, FGameplayTag, EventTag, FGameplayEventData, EventData);
 
 /** Ability task to simply play a montage. Many games will want to make a modified version of this task that looks for game-specific events */
 UCLASS()
@@ -18,16 +19,19 @@ class PLAYMONTAGEBYTAG_API UAbilityTask_PlayMontageByTagAndWait : public UAbilit
 	
 public:
 	UPROPERTY(BlueprintAssignable)
-	FMontageTagWaitDelegate	OnCompleted;
+	FMontageTagWaitEventDelegate OnCompleted;
 
 	UPROPERTY(BlueprintAssignable)
-	FMontageTagWaitDelegate	OnBlendOut;
+	FMontageTagWaitEventDelegate OnBlendOut;
 
 	UPROPERTY(BlueprintAssignable)
-	FMontageTagWaitDelegate	OnInterrupted;
+	FMontageTagWaitEventDelegate OnInterrupted;
 
 	UPROPERTY(BlueprintAssignable)
-	FMontageTagWaitDelegate	OnCancelled;
+	FMontageTagWaitEventDelegate OnCancelled;
+
+	UPROPERTY(BlueprintAssignable)
+	FMontageTagWaitEventDelegate OnEventReceived;
 
 	UFUNCTION()
 	void OnMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
@@ -47,17 +51,27 @@ public:
 	 *
 	 * @param TaskInstanceName Set to override the name of this task, for later querying
 	 * @param MontageTag The tag to find montages for
+	 * @param EventTags Any gameplay events matching this tag will activate the EventReceived callback. If empty, all events will trigger callback
 	 * @param Rate Change to play the montage faster or slower
 	 * @param StartSection If not empty, named montage section to start from
 	 * @param bStopWhenAbilityEnds If true, this montage will be aborted if the ability ends normally. It is always stopped when the ability is explicitly cancelled
 	 * @param AnimRootMotionTranslationScale Change to modify size of root motion or set to 0 to block it entirely
+	 * @param bOverrideBlendIn If true apply BlendInOverride settings instead of the settings assigned to the montage
 	 * @param StartTimeSeconds Starting time offset in montage, this will be overridden by StartSection if that is also set
 	 * @param bAllowInterruptAfterBlendOut If true, you can receive OnInterrupted after an OnBlendOut started (otherwise OnInterrupted will not fire when interrupted, but you will not get OnComplete).
+	 * @param OverrideBlendOutTimeOnCancelAbility If >= 0 it will override the blend out time when ability is cancelled.
+	 * @param OverrideBlendOutTimeOnEndAbility If >= 0 it will override the blend out time when ability ends.
 	 */
 	UFUNCTION(BlueprintCallable, Category="Ability|Tasks", meta = (DisplayName="PlayMontageByTagAndWait",
 		HidePin = "OwningAbility", DefaultToSelf = "OwningAbility", BlueprintInternalUseOnly = "TRUE", MontageTag="MontageTag"))
 	static UAbilityTask_PlayMontageByTagAndWait* CreatePlayMontageByTagAndWaitProxy(UGameplayAbility* OwningAbility,
-		FName TaskInstanceName, FGameplayTag MontageTag, float Rate = 1.f, FName StartSection = NAME_None, bool bStopWhenAbilityEnds = true, float AnimRootMotionTranslationScale = 1.f, float StartTimeSeconds = 0.f, bool bAllowInterruptAfterBlendOut = false);
+		FName TaskInstanceName, FGameplayTag MontageTag, FGameplayTagContainer EventTags, float Rate = 1.f, 
+		FName StartSection = NAME_None, bool bStopWhenAbilityEnds = true, float AnimRootMotionTranslationScale = 1.f,
+		float StartTimeSeconds = 0.f, bool bOverrideBlendIn = false, FMontageBlendSettings BlendInOverride = FMontageBlendSettings(), bool bAllowInterruptAfterBlendOut = false,
+		float OverrideBlendOutTimeOnCancelAbility = -1.f, float OverrideBlendOutTimeOnEndAbility = -1.f);
+
+	float PlayDrivenMontageForMesh(UPlayTagAbilitySystemComponent* ASC, float Duration,
+		const FDrivenMontagePair& Montage, bool bReplicate) const;
 
 	virtual void Activate() override;
 
@@ -67,11 +81,12 @@ public:
 	virtual FString GetDebugString() const override;
 
 protected:
-
 	virtual void OnDestroy(bool AbilityEnded) override;
 
 	/** Checks if the ability is playing a montage and stops that montage, returns true if a montage was stopped, false if not. */
-	bool StopPlayingMontage();
+	bool StopPlayingMontage(float OverrideBlendOutTime = -1.f);
+
+	void OnGameplayEvent(FGameplayTag EventTag, const FGameplayEventData* Payload);
 
 	FOnMontageBlendingOutStarted BlendingOutDelegate;
 	FOnMontageEnded MontageEndedDelegate;
@@ -79,6 +94,9 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> MontageToPlay;
+
+	UPROPERTY()
+	FGameplayTagContainer EventTags;
 
 	UPROPERTY()
 	FDrivenMontages DrivenMontages;
@@ -96,8 +114,22 @@ protected:
 	float StartTimeSeconds;
 
 	UPROPERTY()
+	bool bOverrideBlendIn;
+	
+	UPROPERTY()
+	FMontageBlendSettings BlendInOverride;
+
+	UPROPERTY()
 	bool bStopWhenAbilityEnds;
 
 	UPROPERTY()
 	bool bAllowInterruptAfterBlendOut;
+	
+	UPROPERTY()
+	float OverrideBlendOutTimeOnCancelAbility;
+
+	UPROPERTY()
+	float OverrideBlendOutTimeOnEndAbility;
+
+	FDelegateHandle EventHandle;
 };

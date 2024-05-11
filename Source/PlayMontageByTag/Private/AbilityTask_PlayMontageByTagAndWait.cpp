@@ -7,6 +7,7 @@
 #include "AbilitySystemGlobals.h"
 #include "AbilitySystemLog.h"
 #include "PlayMontageByTagInterface.h"
+#include "PlayTagAbilitySystemComponent.h"
 #include "PlayMontageByTagLib.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AbilityTask_PlayMontageByTagAndWait)
@@ -40,7 +41,7 @@ void UAbilityTask_PlayMontageByTagAndWait::OnMontageBlendingOut(UAnimMontage* Mo
 	{
 		if (bInterrupted)
 		{
-			OnInterrupted.Broadcast();
+			OnInterrupted.Broadcast(FGameplayTag(), FGameplayEventData());
 
 			if (GUseAggressivePlayMontageAndWaitEndTask)
 			{
@@ -49,19 +50,19 @@ void UAbilityTask_PlayMontageByTagAndWait::OnMontageBlendingOut(UAnimMontage* Mo
 		}
 		else
 		{
-			OnBlendOut.Broadcast();
+			OnBlendOut.Broadcast(FGameplayTag(), FGameplayEventData());
 		}
 	}
 }
 
 void UAbilityTask_PlayMontageByTagAndWait::OnGameplayAbilityCancelled()
 {
-	if (StopPlayingMontage() || bAllowInterruptAfterBlendOut)
+	if (StopPlayingMontage(OverrideBlendOutTimeOnCancelAbility) || bAllowInterruptAfterBlendOut)
 	{
 		// Let the BP handle the interrupt as well
 		if (ShouldBroadcastAbilityTaskDelegates())
 		{
-			OnInterrupted.Broadcast();
+			OnInterrupted.Broadcast(FGameplayTag(), FGameplayEventData());
 		}
 	}
 
@@ -77,18 +78,19 @@ void UAbilityTask_PlayMontageByTagAndWait::OnMontageEnded(UAnimMontage* Montage,
 	{
 		if (ShouldBroadcastAbilityTaskDelegates())
 		{
-			OnCompleted.Broadcast();
+			OnCompleted.Broadcast(FGameplayTag(), FGameplayEventData());
 		}
 	}
 
 	EndTask();
 }
 
-UAbilityTask_PlayMontageByTagAndWait* UAbilityTask_PlayMontageByTagAndWait::CreatePlayMontageByTagAndWaitProxy(UGameplayAbility* OwningAbility,
-	FName TaskInstanceName, FGameplayTag MontageTag, float Rate, FName StartSection, bool bStopWhenAbilityEnds, float
-	AnimRootMotionTranslationScale, float StartTimeSeconds, bool bAllowInterruptAfterBlendOut)
+UAbilityTask_PlayMontageByTagAndWait* UAbilityTask_PlayMontageByTagAndWait::CreatePlayMontageByTagAndWaitProxy(
+	UGameplayAbility* OwningAbility, FName TaskInstanceName, FGameplayTag MontageTag, FGameplayTagContainer EventTags,
+	float Rate, FName StartSection, bool bStopWhenAbilityEnds, float AnimRootMotionTranslationScale,
+	float StartTimeSeconds, bool bOverrideBlendIn, FMontageBlendSettings BlendInOverride,
+	bool bAllowInterruptAfterBlendOut, float OverrideBlendOutTimeOnCancelAbility, float	OverrideBlendOutTimeOnEndAbility)
 {
-
 	UAbilitySystemGlobals::NonShipping_ApplyGlobalAbilityScaler_Rate(Rate);
 
 	AActor* AvatarActor = OwningAbility->GetAvatarActorFromActorInfo();
@@ -115,6 +117,7 @@ UAbilityTask_PlayMontageByTagAndWait* UAbilityTask_PlayMontageByTagAndWait::Crea
 
 	UAbilityTask_PlayMontageByTagAndWait* MyObj = NewAbilityTask<UAbilityTask_PlayMontageByTagAndWait>(OwningAbility, TaskInstanceName);
 	MyObj->MontageToPlay = MontageToPlay;
+	MyObj->EventTags = EventTags;
 	MyObj->DrivenMontages = DrivenMontages;
 	MyObj->Rate = Rate;
 	MyObj->StartSection = StartSection;
@@ -122,8 +125,21 @@ UAbilityTask_PlayMontageByTagAndWait* UAbilityTask_PlayMontageByTagAndWait::Crea
 	MyObj->bStopWhenAbilityEnds = bStopWhenAbilityEnds;
 	MyObj->bAllowInterruptAfterBlendOut = bAllowInterruptAfterBlendOut;
 	MyObj->StartTimeSeconds = StartTimeSeconds;
+	MyObj->bOverrideBlendIn = bOverrideBlendIn;
+	MyObj->BlendInOverride = BlendInOverride;
+	MyObj->OverrideBlendOutTimeOnCancelAbility = OverrideBlendOutTimeOnCancelAbility;
+	MyObj->OverrideBlendOutTimeOnEndAbility = OverrideBlendOutTimeOnEndAbility;
 	
 	return MyObj;
+}
+
+float UAbilityTask_PlayMontageByTagAndWait::PlayDrivenMontageForMesh(UPlayTagAbilitySystemComponent* ASC, const float Duration, const FDrivenMontagePair& Montage, const bool bReplicate) const
+{
+	const float ScaledRate = Rate * UPlayMontageByTagLib::GetMontagePlayRateScaledByDuration(Montage.Montage, Duration);
+	
+	return ASC->PlayMontageForMesh(
+		Ability, Montage.Mesh, Ability->GetCurrentActivationInfo(), Montage.Montage, ScaledRate,
+		bOverrideBlendIn, BlendInOverride, StartSection, StartTimeSeconds, bReplicate);
 }
 
 void UAbilityTask_PlayMontageByTagAndWait::Activate()
@@ -135,19 +151,35 @@ void UAbilityTask_PlayMontageByTagAndWait::Activate()
 
 	bool bPlayedMontage = false;
 
-	if (UAbilitySystemComponent* ASC = AbilitySystemComponent.Get())
+	if (UPlayTagAbilitySystemComponent* ASC = AbilitySystemComponent.IsValid() ?
+		Cast<UPlayTagAbilitySystemComponent>(AbilitySystemComponent.Get()) : nullptr)
 	{
 		const FGameplayAbilityActorInfo* ActorInfo = Ability->GetCurrentActorInfo();
 		UAnimInstance* AnimInstance = ActorInfo->GetAnimInstance();
 		if (AnimInstance != nullptr)
 		{
-			if (const float Duration = ASC->PlayMontage(Ability, Ability->GetCurrentActivationInfo(), MontageToPlay, Rate, StartSection, StartTimeSeconds) > 0.f)
-			{
-				if (ActorInfo->AvatarActor.IsValid())
-				{
-					UPlayMontageByTagLib::PlayDrivenMontages(ActorInfo->AvatarActor.Get(), DrivenMontages, Duration, Rate, StartSection);
-				}
+			// Bind to event callback
+			EventHandle = ASC->AddGameplayEventTagContainerDelegate(EventTags,
+				FGameplayEventTagMulticastDelegate::FDelegate::CreateUObject(this, &ThisClass::OnGameplayEvent));
+
+			const float Duration = ASC->PlayMontageForMesh(Ability, ActorInfo->SkeletalMeshComponent.Get(),
+				Ability->GetCurrentActivationInfo(), MontageToPlay, Rate, bOverrideBlendIn, BlendInOverride,
+				StartSection, StartTimeSeconds, true);
 				
+			if (Duration > 0.f)
+			{
+				for (const auto& Montage : DrivenMontages.DrivenMontages)
+				{
+					constexpr bool bReplicate = true;
+					PlayDrivenMontageForMesh(ASC, Duration, Montage, bReplicate);
+				}
+
+				for (const auto& Montage : DrivenMontages.LocalDrivenMontages)
+				{
+					constexpr bool bReplicate = false;
+					PlayDrivenMontageForMesh(ASC, Duration, Montage, bReplicate);
+				}
+
 				// Playing a montage could potentially fire off a callback into game code which could kill this ability! Early out if we are  pending kill.
 				if (ShouldBroadcastAbilityTaskDelegates() == false)
 				{
@@ -187,7 +219,7 @@ void UAbilityTask_PlayMontageByTagAndWait::Activate()
 		ABILITY_LOG(Warning, TEXT("UAbilityTask_PlayMontageByTagAndWait called in Ability %s failed to play montage %s; Task Instance Name %s."), *Ability->GetName(), *GetNameSafe(MontageToPlay),*InstanceName.ToString());
 		if (ShouldBroadcastAbilityTaskDelegates())
 		{
-			OnCancelled.Broadcast();
+			OnCancelled.Broadcast(FGameplayTag(), FGameplayEventData());
 		}
 	}
 
@@ -198,7 +230,7 @@ void UAbilityTask_PlayMontageByTagAndWait::ExternalCancel()
 {
 	if (ShouldBroadcastAbilityTaskDelegates())
 	{
-		OnCancelled.Broadcast();
+		OnCancelled.Broadcast(FGameplayTag(), FGameplayEventData());
 	}
 	Super::ExternalCancel();
 }
@@ -214,15 +246,21 @@ void UAbilityTask_PlayMontageByTagAndWait::OnDestroy(bool AbilityEnded)
 		Ability->OnGameplayAbilityCancelled.Remove(InterruptedHandle);
 		if (AbilityEnded && bStopWhenAbilityEnds)
 		{
-			StopPlayingMontage();
+			StopPlayingMontage(OverrideBlendOutTimeOnEndAbility);
 		}
+	}
+
+	if (UPlayTagAbilitySystemComponent* ASC = AbilitySystemComponent.IsValid() ?
+		Cast<UPlayTagAbilitySystemComponent>(AbilitySystemComponent.Get()) : nullptr)
+	{
+		ASC->RemoveGameplayEventTagContainerDelegate(EventTags, EventHandle);
 	}
 
 	Super::OnDestroy(AbilityEnded);
 
 }
 
-bool UAbilityTask_PlayMontageByTagAndWait::StopPlayingMontage()
+bool UAbilityTask_PlayMontageByTagAndWait::StopPlayingMontage(float OverrideBlendOutTime)
 {
 	if (Ability == nullptr)
 	{
@@ -243,7 +281,9 @@ bool UAbilityTask_PlayMontageByTagAndWait::StopPlayingMontage()
 
 	// Check if the montage is still playing
 	// The ability would have been interrupted, in which case we should automatically stop the montage
-	UAbilitySystemComponent* ASC = AbilitySystemComponent.Get();
+	UPlayTagAbilitySystemComponent* ASC = AbilitySystemComponent.IsValid() ?
+		Cast<UPlayTagAbilitySystemComponent>(AbilitySystemComponent.Get()) : nullptr;
+	
 	if (ASC && Ability)
 	{
 		if (ASC->GetAnimatingAbility() == Ability
@@ -256,19 +296,34 @@ bool UAbilityTask_PlayMontageByTagAndWait::StopPlayingMontage()
 				MontageInstance->OnMontageBlendingOutStarted.Unbind();
 				MontageInstance->OnMontageEnded.Unbind();
 			}
-
-			if (UPlayMontageByTagLib::CanStopCurrentMontage(ASC, Ability))
+			
+			for (const auto& Montage : DrivenMontages.DrivenMontages)
 			{
-				// Stop all driven montages
-				UPlayMontageByTagLib::StopDrivenMontages(GetAvatarActor(), DrivenMontages, ASC->GetCurrentMontage()->BlendOut.GetBlendTime());
+				ASC->CurrentMontageStopForMesh(Montage.Mesh, OverrideBlendOutTime);
 			}
 
-			ASC->CurrentMontageStop();
+			for (const auto& Montage : DrivenMontages.LocalDrivenMontages)
+			{
+				ASC->CurrentMontageStopForMesh(Montage.Mesh, OverrideBlendOutTime);
+			}
+
+			ASC->CurrentMontageStop(OverrideBlendOutTime);
 			return true;
 		}
 	}
 
 	return false;
+}
+
+void UAbilityTask_PlayMontageByTagAndWait::OnGameplayEvent(FGameplayTag EventTag, const FGameplayEventData* Payload)
+{
+	if (ShouldBroadcastAbilityTaskDelegates())
+	{
+		FGameplayEventData TempData = *Payload;
+		TempData.EventTag = EventTag;
+
+		OnEventReceived.Broadcast(EventTag, TempData);
+	}
 }
 
 FString UAbilityTask_PlayMontageByTagAndWait::GetDebugString() const
