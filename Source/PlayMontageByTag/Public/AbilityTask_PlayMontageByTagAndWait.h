@@ -8,8 +8,102 @@
 #include "Animation/AnimInstance.h"
 #include "AbilityTask_PlayMontageByTagAndWait.generated.h"
 
+class UGameplayTask_WaitDelay;
+struct FMontageBlendSettings;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMontageTagWaitDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMontageTagWaitEventDelegate, FGameplayTag, EventTag, FGameplayEventData, EventData);
+
+/**
+ * Handling for parsing notifies in the montage to be triggered by tags
+ */
+UENUM(BlueprintType)
+enum class EPlayMontageByTagNotifyHandling : uint8
+{
+	Montage			UMETA(ToolTip="Driver montage will be checked for notifies"),
+	Disabled		UMETA(ToolTip="Notifies will not be handled"),
+};
+
+enum class EPlayMontageByTagNotifyType : uint8
+{
+	Notify,
+	NotifyStateBegin,
+	NotifyStateEnd,
+};
+
+USTRUCT()
+struct FAnimNotifyByTagEvent
+{
+	GENERATED_BODY()
+	
+	FAnimNotifyByTagEvent(const FGameplayTag& InTag = FGameplayTag::EmptyTag, const TArray<EPlayMontageByTagEventType>& bInEnsureTriggerNotify = {}, EPlayMontageByTagNotifyType InNotifyType = EPlayMontageByTagNotifyType::Notify, float InTime = 0.f)
+		: Tag(InTag)
+		, EnsureTriggerNotify(bInEnsureTriggerNotify)
+		, bEnsureEndStateIfTriggered(true)
+		, Time(InTime)
+		, bHasBroadcast(false)
+		, bIsEndState(false)
+		, bNotifySkipped(false)
+		, NotifyStatePair(nullptr)
+		, NotifyType(InNotifyType)
+	{}
+
+	UPROPERTY()
+	FGameplayTag Tag;
+	
+	UPROPERTY()
+	TArray<EPlayMontageByTagEventType> EnsureTriggerNotify;
+
+	UPROPERTY()
+	bool bEnsureEndStateIfTriggered;
+
+	UPROPERTY()
+	float Time;
+
+	UPROPERTY()
+	FGuid NotifyID;
+
+	UPROPERTY()
+	bool bHasBroadcast;
+
+	UPROPERTY()
+	bool bIsEndState;
+
+	UPROPERTY()
+	bool bNotifySkipped;
+	
+	FAnimNotifyByTagEvent* NotifyStatePair;
+
+	EPlayMontageByTagNotifyType NotifyType;
+
+	FTimerHandle Timer;
+	FTimerDelegate TimerDelegate;
+
+	void OnTimer();
+	
+	void ClearTimers()
+	{
+		if (Timer.IsValid())
+		{
+			Timer.Invalidate();
+		}
+		if (TimerDelegate.IsBound())
+		{
+			TimerDelegate.Unbind();
+		}
+	}
+
+	bool IsValid() const { return Tag.IsValid() && NotifyID.IsValid(); }
+
+	bool operator==(const FAnimNotifyByTagEvent& Other) const
+	{
+		return NotifyID.IsValid() && NotifyID == Other.NotifyID;
+	}
+
+	bool operator!=(const FAnimNotifyByTagEvent& Other) const
+	{
+		return !(*this == Other);
+	}
+};
 
 /** Ability task to simply play a montage. Many games will want to make a modified version of this task that looks for game-specific events */
 UCLASS()
@@ -33,6 +127,15 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FMontageTagWaitEventDelegate OnEventReceived;
 
+	UPROPERTY(BlueprintAssignable)
+	FMontageTagWaitEventDelegate OnNotify;
+
+	UPROPERTY(BlueprintAssignable)
+	FMontageTagWaitEventDelegate OnNotifyStateBegin;
+
+	UPROPERTY(BlueprintAssignable)
+	FMontageTagWaitEventDelegate OnNotifyStateEnd;
+	
 	UFUNCTION()
 	void OnMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
 
@@ -49,6 +152,7 @@ public:
 	 * On normal execution, OnBlendOut is called when the montage is blending out, and OnCompleted when it is completely done playing
 	 * OnInterrupted is called if another montage overwrites this, and OnCancelled is called if the ability or task is cancelled
 	 *
+	 * @param OwningAbility The ability that owns this task
 	 * @param TaskInstanceName Set to override the name of this task, for later querying
 	 * @param MontageTag The tag to find montages for
 	 * @param EventTags Any gameplay events matching this tag will activate the EventReceived callback. If empty, all events will trigger callback
@@ -57,7 +161,11 @@ public:
 	 * @param bStopWhenAbilityEnds If true, this montage will be aborted if the ability ends normally. It is always stopped when the ability is explicitly cancelled
 	 * @param AnimRootMotionTranslationScale Change to modify size of root motion or set to 0 to block it entirely
 	 * @param bOverrideBlendIn If true apply BlendInOverride settings instead of the settings assigned to the montage
+	 * @param BlendInOverride Settings to use if bOverrideBlendIn is true
 	 * @param StartTimeSeconds Starting time offset in montage, this will be overridden by StartSection if that is also set
+	 * @param NotifyHandling How to handle 'by tag' notifies in the montage
+	 * @param bTriggerNotifiesBeforeStartTimeSeconds If true, notifies clipped by StartTimeSeconds will be triggered even if they are before the start time
+	 * @param NotifyEndHandling How to handle notifies that were not triggered when the montage ends
 	 * @param bDrivenMontagesMatchDriverDuration If true, all driven montages will run for the same duration as the driver montage
 	 * @param bAllowInterruptAfterBlendOut If true, you can receive OnInterrupted after an OnBlendOut started (otherwise OnInterrupted will not fire when interrupted, but you will not get OnComplete).
 	 * @param OverrideBlendOutTimeOnCancelAbility If >= 0 it will override the blend out time when ability is cancelled.
@@ -68,8 +176,10 @@ public:
 	static UAbilityTask_PlayMontageByTagAndWait* CreatePlayMontageByTagAndWaitProxy(UGameplayAbility* OwningAbility,
 		FName TaskInstanceName, FGameplayTag MontageTag, FGameplayTagContainer EventTags, float Rate = 1.f, 
 		FName StartSection = NAME_None, bool bStopWhenAbilityEnds = true, float AnimRootMotionTranslationScale = 1.f,
-		float StartTimeSeconds = 0.f, bool bDrivenMontagesMatchDriverDuration = true, bool bOverrideBlendIn = false, FMontageBlendSettings BlendInOverride = FMontageBlendSettings(), bool bAllowInterruptAfterBlendOut = false,
-		float OverrideBlendOutTimeOnCancelAbility = -1.f, float OverrideBlendOutTimeOnEndAbility = -1.f);
+		float StartTimeSeconds = 0.f, EPlayMontageByTagNotifyHandling NotifyHandling = EPlayMontageByTagNotifyHandling::Montage,
+		bool bTriggerNotifiesBeforeStartTimeSeconds = true, bool bDrivenMontagesMatchDriverDuration = true,
+		bool bOverrideBlendIn = false, FMontageBlendSettings BlendInOverride = FMontageBlendSettings(),
+		bool bAllowInterruptAfterBlendOut = false, float OverrideBlendOutTimeOnCancelAbility = -1.f, float OverrideBlendOutTimeOnEndAbility = -1.f);
 
 	float PlayDrivenMontageForMesh(UPlayTagAbilitySystemComponent* ASC, float Duration,
 		const FDrivenMontagePair& Montage, bool bReplicate) const;
@@ -88,6 +198,10 @@ protected:
 	bool StopPlayingMontage(float OverrideBlendOutTime = -1.f);
 
 	void OnGameplayEvent(FGameplayTag EventTag, const FGameplayEventData* Payload);
+	
+	void BroadcastTagEvent(FAnimNotifyByTagEvent& TagEvent) const;
+	
+	void EnsureBroadcastTagEvents(EPlayMontageByTagEventType EventType);
 
 	FOnMontageBlendingOutStarted BlendingOutDelegate;
 	FOnMontageEnded MontageEndedDelegate;
@@ -116,7 +230,13 @@ protected:
 
 	UPROPERTY()
 	bool bDrivenMontagesMatchDriverDuration;
-	
+
+	UPROPERTY()
+	bool bTriggerNotifiesBeforeStartTimeSeconds;
+
+	UPROPERTY()
+	EPlayMontageByTagNotifyHandling NotifyHandling;
+
 	UPROPERTY()
 	bool bOverrideBlendIn;
 	
@@ -135,5 +255,10 @@ protected:
 	UPROPERTY()
 	float OverrideBlendOutTimeOnEndAbility;
 
+	UPROPERTY()
+	TArray<FAnimNotifyByTagEvent> NotifyByTags;
+
 	FDelegateHandle EventHandle;
+
+	void OnTimer(FAnimNotifyByTagEvent* TagEvent);
 };

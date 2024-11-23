@@ -6,9 +6,12 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
 #include "AbilitySystemLog.h"
+#include "AnimNotifyState_ByTag.h"
+#include "AnimNotify_ByTag.h"
 #include "PlayMontageByTagInterface.h"
 #include "PlayTagAbilitySystemComponent.h"
 #include "PlayMontageByTagLib.h"
+#include "Tasks/GameplayTask_WaitDelay.h"
 
 #include UE_INLINE_GENERATED_CPP_BY_NAME(AbilityTask_PlayMontageByTagAndWait)
 
@@ -42,6 +45,7 @@ void UAbilityTask_PlayMontageByTagAndWait::OnMontageBlendingOut(UAnimMontage* Mo
 		if (bInterrupted)
 		{
 			OnInterrupted.Broadcast(FGameplayTag(), FGameplayEventData());
+			EnsureBroadcastTagEvents(EPlayMontageByTagEventType::OnInterrupted);
 
 			if (GUseAggressivePlayMontageAndWaitEndTask)
 			{
@@ -51,6 +55,7 @@ void UAbilityTask_PlayMontageByTagAndWait::OnMontageBlendingOut(UAnimMontage* Mo
 		else
 		{
 			OnBlendOut.Broadcast(FGameplayTag(), FGameplayEventData());
+			EnsureBroadcastTagEvents(EPlayMontageByTagEventType::BlendOut);
 		}
 	}
 }
@@ -63,6 +68,7 @@ void UAbilityTask_PlayMontageByTagAndWait::OnGameplayAbilityCancelled()
 		if (ShouldBroadcastAbilityTaskDelegates())
 		{
 			OnInterrupted.Broadcast(FGameplayTag(), FGameplayEventData());
+			EnsureBroadcastTagEvents(EPlayMontageByTagEventType::OnInterrupted);
 		}
 	}
 
@@ -79,6 +85,7 @@ void UAbilityTask_PlayMontageByTagAndWait::OnMontageEnded(UAnimMontage* Montage,
 		if (ShouldBroadcastAbilityTaskDelegates())
 		{
 			OnCompleted.Broadcast(FGameplayTag(), FGameplayEventData());
+			EnsureBroadcastTagEvents(EPlayMontageByTagEventType::OnCompleted);
 		}
 	}
 
@@ -88,9 +95,10 @@ void UAbilityTask_PlayMontageByTagAndWait::OnMontageEnded(UAnimMontage* Montage,
 UAbilityTask_PlayMontageByTagAndWait* UAbilityTask_PlayMontageByTagAndWait::CreatePlayMontageByTagAndWaitProxy(
 	UGameplayAbility* OwningAbility, FName TaskInstanceName, FGameplayTag MontageTag, FGameplayTagContainer EventTags,
 	float Rate, FName StartSection, bool bStopWhenAbilityEnds, float AnimRootMotionTranslationScale,
-	float StartTimeSeconds, bool bDrivenMontagesMatchDriverDuration, bool bOverrideBlendIn,
-	FMontageBlendSettings BlendInOverride, bool bAllowInterruptAfterBlendOut, float OverrideBlendOutTimeOnCancelAbility, float
-	OverrideBlendOutTimeOnEndAbility)
+	float StartTimeSeconds, EPlayMontageByTagNotifyHandling NotifyHandling, bool bTriggerNotifiesBeforeStartTimeSeconds,
+	bool bDrivenMontagesMatchDriverDuration, bool bOverrideBlendIn, FMontageBlendSettings BlendInOverride,
+	bool bAllowInterruptAfterBlendOut, float OverrideBlendOutTimeOnCancelAbility,
+	float OverrideBlendOutTimeOnEndAbility)
 {
 	UAbilitySystemGlobals::NonShipping_ApplyGlobalAbilityScaler_Rate(Rate);
 
@@ -126,6 +134,8 @@ UAbilityTask_PlayMontageByTagAndWait* UAbilityTask_PlayMontageByTagAndWait::Crea
 	MyObj->bStopWhenAbilityEnds = bStopWhenAbilityEnds;
 	MyObj->bAllowInterruptAfterBlendOut = bAllowInterruptAfterBlendOut;
 	MyObj->StartTimeSeconds = StartTimeSeconds;
+	MyObj->NotifyHandling = NotifyHandling;
+	MyObj->bTriggerNotifiesBeforeStartTimeSeconds = bTriggerNotifiesBeforeStartTimeSeconds;
 	MyObj->bDrivenMontagesMatchDriverDuration = bDrivenMontagesMatchDriverDuration;
 	MyObj->bOverrideBlendIn = bOverrideBlendIn;
 	MyObj->BlendInOverride = BlendInOverride;
@@ -166,10 +176,85 @@ void UAbilityTask_PlayMontageByTagAndWait::Activate()
 			EventHandle = ASC->AddGameplayEventTagContainerDelegate(EventTags,
 				FGameplayEventTagMulticastDelegate::FDelegate::CreateUObject(this, &ThisClass::OnGameplayEvent));
 
+			// Gather notifies with tags
+			NotifyByTags.Reset();
+			switch (NotifyHandling)
+			{
+			case EPlayMontageByTagNotifyHandling::Montage:
+				{
+					// Gather notifies from driver montage
+					TArray<FAnimNotifyEvent>& Notifies = MontageToPlay->Notifies;
+					for (FAnimNotifyEvent& Notify : Notifies)
+					{
+						const float StartTime = Notify.GetTime();
+						
+						if (UAnimNotify_ByTag* NotifyByTag = Notify.Notify ? Cast<UAnimNotify_ByTag>(Notify.Notify) : nullptr)
+						{
+							FAnimNotifyByTagEvent NotifyByTagEvent = { NotifyByTag->NotifyTag, NotifyByTag->EnsureTriggerNotify, 
+							EPlayMontageByTagNotifyType::Notify, Notify.GetTime() };
+							NotifyByTags.Add(NotifyByTagEvent);
+						}
+
+						if (UAnimNotifyState_ByTag* NotifyStateByTag = Notify.NotifyStateClass ? Cast<UAnimNotifyState_ByTag>(Notify.NotifyStateClass) : nullptr)
+						{
+							const float EndTime = StartTime + Notify.GetDuration();
+
+							// Start state notify
+							FAnimNotifyByTagEvent& NotifyByTagEvent = NotifyByTags.Add_GetRef({
+								NotifyStateByTag->NotifyTag, NotifyStateByTag->EnsureTriggerNotify,
+								EPlayMontageByTagNotifyType::NotifyStateBegin, Notify.GetTime() });
+
+							// End state notify
+							FAnimNotifyByTagEvent& NotifyStateEndByTagEvent = NotifyByTags.Add_GetRef({
+								NotifyStateByTag->NotifyTag, NotifyStateByTag->EnsureTriggerNotify,
+								EPlayMontageByTagNotifyType::NotifyStateEnd, EndTime });
+
+							NotifyStateEndByTagEvent.bIsEndState = true;
+
+							// Pair begin and end states
+							NotifyByTagEvent.NotifyStatePair = &NotifyStateEndByTagEvent;
+							NotifyStateEndByTagEvent.NotifyStatePair = &NotifyByTagEvent;
+						}
+					}
+				}
+				break;
+			// Note: Could add enum option to grab all anim sequences and parse those too
+			case EPlayMontageByTagNotifyHandling::Disabled:
+				break;
+			}
+
+			// Trigger notifies before start time and remove them, if we want to trigger them before the start time
+			// Otherwise remove them without triggering
+			for (FAnimNotifyByTagEvent& TagEvent : NotifyByTags)
+			{
+				if (TagEvent.Time <= StartTimeSeconds)
+				{
+					if (bTriggerNotifiesBeforeStartTimeSeconds)
+					{
+						BroadcastTagEvent(TagEvent);
+					}
+					else
+					{
+						TagEvent.bNotifySkipped = true;
+					}
+				}
+			}
+			
+			// Create tasks for notifies
+			UWorld* World = GetWorld();
+			for (FAnimNotifyByTagEvent& TagEvent : NotifyByTags)
+			{
+				// Set up timer for notify
+				TagEvent.TimerDelegate = FTimerDelegate::CreateUObject(this, &ThisClass::OnTimer, &TagEvent);
+				World->GetTimerManager().SetTimer(TagEvent.Timer, TagEvent.TimerDelegate, TagEvent.Time, false);
+			}
+			
+			// Play Driver Montage
 			const float Duration = ASC->PlayMontageForMesh(Ability, ActorInfo->SkeletalMeshComponent.Get(),
 				Ability->GetCurrentActivationInfo(), MontageToPlay, Rate, bOverrideBlendIn, BlendInOverride,
 				StartSection, StartTimeSeconds, true);
-				
+
+			// Play Driven Montages
 			if (Duration > 0.f)
 			{
 				for (const auto& Montage : DrivenMontages.DrivenMontages)
@@ -224,6 +309,8 @@ void UAbilityTask_PlayMontageByTagAndWait::Activate()
 		if (ShouldBroadcastAbilityTaskDelegates())
 		{
 			OnCancelled.Broadcast(FGameplayTag(), FGameplayEventData());
+
+			// Don't call ensure broadcast tag events here, as we didn't play the montage
 		}
 	}
 
@@ -235,6 +322,7 @@ void UAbilityTask_PlayMontageByTagAndWait::ExternalCancel()
 	if (ShouldBroadcastAbilityTaskDelegates())
 	{
 		OnCancelled.Broadcast(FGameplayTag(), FGameplayEventData());
+		EnsureBroadcastTagEvents(EPlayMontageByTagEventType::OnCancelled);
 	}
 	Super::ExternalCancel();
 }
@@ -251,6 +339,10 @@ void UAbilityTask_PlayMontageByTagAndWait::OnDestroy(bool AbilityEnded)
 		if (AbilityEnded && bStopWhenAbilityEnds)
 		{
 			StopPlayingMontage(OverrideBlendOutTimeOnEndAbility);
+			
+			// Let the BP handle the interrupt as well
+			OnInterrupted.Broadcast(FGameplayTag(), FGameplayEventData());
+			EnsureBroadcastTagEvents(EPlayMontageByTagEventType::OnInterrupted);
 		}
 	}
 
@@ -287,11 +379,13 @@ bool UAbilityTask_PlayMontageByTagAndWait::StopPlayingMontage(float OverrideBlen
 	// The ability would have been interrupted, in which case we should automatically stop the montage
 	UPlayTagAbilitySystemComponent* ASC = AbilitySystemComponent.IsValid() ?
 		Cast<UPlayTagAbilitySystemComponent>(AbilitySystemComponent.Get()) : nullptr;
+
+	USkeletalMeshComponent* Mesh = ActorInfo && ActorInfo->SkeletalMeshComponent.IsValid() ? ActorInfo->SkeletalMeshComponent.Get() : nullptr;
 	
-	if (ASC && Ability)
+	if (ASC && Ability && Mesh)
 	{
-		if (ASC->GetAnimatingAbility() == Ability
-			&& ASC->GetCurrentMontage() == MontageToPlay)
+		if (ASC->GetAnimatingAbilityFromMesh(Mesh) == Ability
+			&& ASC->GetCurrentMontageForMesh(Mesh) == MontageToPlay)
 		{
 			// Unbind delegates so they don't get called as well
 			FAnimMontageInstance* MontageInstance = AnimInstance->GetActiveInstanceForMontage(MontageToPlay);
@@ -300,19 +394,21 @@ bool UAbilityTask_PlayMontageByTagAndWait::StopPlayingMontage(float OverrideBlen
 				MontageInstance->OnMontageBlendingOutStarted.Unbind();
 				MontageInstance->OnMontageEnded.Unbind();
 			}
+
+			// Driver Montage
+			ASC->CurrentMontageStopForMesh(Mesh, OverrideBlendOutTime);
 			
+			// Driven Montages
 			for (const auto& Montage : DrivenMontages.DrivenMontages)
 			{
 				ASC->CurrentMontageStopForMesh(Montage.Mesh, OverrideBlendOutTime);
 			}
 
+			// Local Driven Montages
 			for (const auto& Montage : DrivenMontages.LocalDrivenMontages)
 			{
 				ASC->CurrentMontageStopForMesh(Montage.Mesh, OverrideBlendOutTime);
 			}
-
-			ASC->CurrentMontageStop(OverrideBlendOutTime);
-			return true;
 		}
 	}
 
@@ -327,6 +423,80 @@ void UAbilityTask_PlayMontageByTagAndWait::OnGameplayEvent(FGameplayTag EventTag
 		TempData.EventTag = EventTag;
 
 		OnEventReceived.Broadcast(EventTag, TempData);
+	}
+}
+
+void UAbilityTask_PlayMontageByTagAndWait::BroadcastTagEvent(FAnimNotifyByTagEvent& TagEvent) const
+{
+	// Ensure we don't broadcast the same event twice
+	if (TagEvent.bHasBroadcast || TagEvent.bNotifySkipped)
+	{
+		return;
+	}
+
+	// Ensure the start state broadcasts first if this is the end state
+	if (TagEvent.bIsEndState && TagEvent.NotifyStatePair)
+	{
+		// If our start state was skipped, we can't broadcast the end state
+		if (TagEvent.NotifyStatePair->bNotifySkipped)
+		{
+			return;
+		}
+
+		// Broadcast the start state first
+		if (!TagEvent.NotifyStatePair->bHasBroadcast)
+		{
+			BroadcastTagEvent(*TagEvent.NotifyStatePair);
+		}
+	}
+
+	// Mark the event as broadcast and clear timers
+	TagEvent.bHasBroadcast = true;
+	TagEvent.ClearTimers();
+
+	// Broadcast the notify
+	switch (TagEvent.NotifyType)
+	{
+	case EPlayMontageByTagNotifyType::Notify:
+		OnNotify.Broadcast(TagEvent.Tag, FGameplayEventData());
+		break;
+	case EPlayMontageByTagNotifyType::NotifyStateBegin:
+		OnNotifyStateBegin.Broadcast(TagEvent.Tag, FGameplayEventData());
+		break;
+	case EPlayMontageByTagNotifyType::NotifyStateEnd:
+		OnNotifyStateEnd.Broadcast(TagEvent.Tag, FGameplayEventData());						
+		break;
+	}
+}
+
+void UAbilityTask_PlayMontageByTagAndWait::EnsureBroadcastTagEvents(EPlayMontageByTagEventType EventType)
+{
+	for (FAnimNotifyByTagEvent& TagEvent : NotifyByTags)
+	{
+		if (TagEvent.bHasBroadcast)
+		{
+			continue;
+		}
+		
+		// Ensure that notifies are triggered if the montage aborts before they're reached when aborted due to these conditions
+		if (TagEvent.EnsureTriggerNotify.Contains(EventType))
+		{
+			BroadcastTagEvent(TagEvent);
+		}
+		
+		// Ensure that the end state is reached if the start state notify was triggered
+		if (TagEvent.bIsEndState && TagEvent.NotifyStatePair && TagEvent.NotifyStatePair->bHasBroadcast)
+		{
+			BroadcastTagEvent(TagEvent);
+		}
+	}
+}
+
+void UAbilityTask_PlayMontageByTagAndWait::OnTimer(FAnimNotifyByTagEvent* TagEvent)
+{
+	if (TagEvent)
+	{
+		BroadcastTagEvent(*TagEvent);
 	}
 }
 

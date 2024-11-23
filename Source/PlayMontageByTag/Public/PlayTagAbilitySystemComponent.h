@@ -134,6 +134,9 @@ public:
 	// Returns the current animating ability
 	UGameplayAbility* GetAnimatingAbilityFromAnyMesh();
 
+	// Returns the current animating ability
+	UGameplayAbility* GetAnimatingAbilityFromMesh(USkeletalMeshComponent* InMesh);
+
 	// Returns montages that are currently playing
 	TArray<UAnimMontage*> GetCurrentMontages() const;
 

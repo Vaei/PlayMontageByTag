@@ -69,6 +69,10 @@ Code was used from [GASShooter](https://github.com/tranek/GASShooter/)
 
 ## Changelog
 
+### 1.2.0
+* Fix bug where montage wasn't being stopped when ability ends
+* Added support for notify by tag that is processed in the GA itself
+
 ### 1.1.0
 * Added driven montage replication
 * Added blend in overrides

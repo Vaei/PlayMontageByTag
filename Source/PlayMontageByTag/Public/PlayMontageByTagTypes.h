@@ -6,6 +6,15 @@
 
 #include "PlayMontageByTagTypes.generated.h"
 
+UENUM(BlueprintType)
+enum class EPlayMontageByTagEventType : uint8
+{
+	OnCompleted,
+	BlendOut,
+	OnInterrupted,
+	OnCancelled,
+};
+
 USTRUCT()
 struct PLAYMONTAGEBYTAG_API FDrivenMontagePair
 {

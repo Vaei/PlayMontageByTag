@@ -8,4 +8,5 @@
 namespace PlayMontageTags
 {
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(MontageTag);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(MontageTag_Notify);
 }

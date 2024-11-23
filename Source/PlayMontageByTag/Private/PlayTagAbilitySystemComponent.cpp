@@ -318,6 +318,12 @@ UGameplayAbility* UPlayTagAbilitySystemComponent::GetAnimatingAbilityFromAnyMesh
 	return nullptr;
 }
 
+UGameplayAbility* UPlayTagAbilitySystemComponent::GetAnimatingAbilityFromMesh(USkeletalMeshComponent* InMesh)
+{
+	FGameplayAbilityLocalAnimMontageForMesh& AnimMontageInfo = GetLocalAnimMontageInfoForMesh(InMesh);
+	return AnimMontageInfo.LocalMontageInfo.AnimatingAbility.IsValid() ? AnimMontageInfo.LocalMontageInfo.AnimatingAbility.Get() : nullptr;
+}
+
 TArray<UAnimMontage*> UPlayTagAbilitySystemComponent::GetCurrentMontages() const
 {
 	TArray<UAnimMontage*> Montages;
