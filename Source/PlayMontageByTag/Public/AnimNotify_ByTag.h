@@ -31,7 +31,7 @@ public:
 	{
 #if WITH_EDITORONLY_DATA
 		bShouldFireInEditor = false;
-		NotifyColor = FColor(50.f, 50.f, 50.f, 255.f);
+		NotifyColor = FColor(65.f, 65.f, 65.f, 255.f);
 #endif
 	}
 
