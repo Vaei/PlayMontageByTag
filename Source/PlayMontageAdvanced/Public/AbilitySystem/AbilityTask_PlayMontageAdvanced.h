@@ -22,7 +22,7 @@ enum class EPlayMontageAdvancedNotifyHandling : uint8
 	Disabled		UMETA(ToolTip="Notifies will not be handled"),
 };
 
-enum class EPlayMontageByTagNotifyType : uint8
+enum class EPlayMontageAdvancedNotifyType : uint8
 {
 	Notify,
 	NotifyStateBegin,
@@ -34,7 +34,7 @@ struct FAnimNotifyByTagEvent
 {
 	GENERATED_BODY()
 	
-	FAnimNotifyByTagEvent(const FGameplayTag& InTag = FGameplayTag::EmptyTag, const TArray<EPlayMontageAdvancedEventType>& bInEnsureTriggerNotify = {}, EPlayMontageByTagNotifyType InNotifyType = EPlayMontageByTagNotifyType::Notify, float InTime = 0.f)
+	FAnimNotifyByTagEvent(const FGameplayTag& InTag = FGameplayTag::EmptyTag, const TArray<EPlayMontageAdvancedEventType>& bInEnsureTriggerNotify = {}, EPlayMontageAdvancedNotifyType InNotifyType = EPlayMontageAdvancedNotifyType::Notify, float InTime = 0.f)
 		: Tag(InTag)
 		, EnsureTriggerNotify(bInEnsureTriggerNotify)
 		, bEnsureEndStateIfTriggered(true)
@@ -72,7 +72,7 @@ struct FAnimNotifyByTagEvent
 	
 	FAnimNotifyByTagEvent* NotifyStatePair;
 
-	EPlayMontageByTagNotifyType NotifyType;
+	EPlayMontageAdvancedNotifyType NotifyType;
 
 	FTimerHandle Timer;
 	FTimerDelegate TimerDelegate;

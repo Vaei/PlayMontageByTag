@@ -199,7 +199,7 @@ void UAbilityTask_PlayMontageAdvanced::Activate()
 						if (UAnimNotify_ByTag* NotifyByTag = Notify.Notify ? Cast<UAnimNotify_ByTag>(Notify.Notify) : nullptr)
 						{
 							FAnimNotifyByTagEvent NotifyByTagEvent = { NotifyByTag->NotifyTag, NotifyByTag->EnsureTriggerNotify, 
-							EPlayMontageByTagNotifyType::Notify, Notify.GetTime() };
+							EPlayMontageAdvancedNotifyType::Notify, Notify.GetTime() };
 							NotifyByTags.Add(NotifyByTagEvent);
 						}
 
@@ -210,12 +210,12 @@ void UAbilityTask_PlayMontageAdvanced::Activate()
 							// Start state notify
 							FAnimNotifyByTagEvent& NotifyByTagEvent = NotifyByTags.Add_GetRef({
 								NotifyStateByTag->NotifyTag, NotifyStateByTag->EnsureTriggerNotify,
-								EPlayMontageByTagNotifyType::NotifyStateBegin, Notify.GetTime() });
+								EPlayMontageAdvancedNotifyType::NotifyStateBegin, Notify.GetTime() });
 
 							// End state notify
 							FAnimNotifyByTagEvent& NotifyStateEndByTagEvent = NotifyByTags.Add_GetRef({
 								NotifyStateByTag->NotifyTag, NotifyStateByTag->EnsureTriggerNotify,
-								EPlayMontageByTagNotifyType::NotifyStateEnd, EndTime });
+								EPlayMontageAdvancedNotifyType::NotifyStateEnd, EndTime });
 
 							NotifyStateEndByTagEvent.bIsEndState = true;
 
@@ -303,17 +303,17 @@ void UAbilityTask_PlayMontageAdvanced::Activate()
 		}
 		else
 		{
-			ABILITY_LOG(Warning, TEXT("UAbilityTask_PlayMontageByTagAndWait call to PlayMontage failed!"));
+			ABILITY_LOG(Warning, TEXT("UAbilityTask_PlayMontageAdvanced call to PlayMontage failed!"));
 		}
 	}
 	else
 	{
-		ABILITY_LOG(Warning, TEXT("UAbilityTask_PlayMontageByTagAndWait called on invalid AbilitySystemComponent"));
+		ABILITY_LOG(Warning, TEXT("UAbilityTask_PlayMontageAdvanced called on invalid AbilitySystemComponent"));
 	}
 
 	if (!bPlayedMontage)
 	{
-		ABILITY_LOG(Warning, TEXT("UAbilityTask_PlayMontageByTagAndWait called in Ability %s failed to play montage %s; Task Instance Name %s."), *Ability->GetName(), *GetNameSafe(MontageToPlay),*InstanceName.ToString());
+		ABILITY_LOG(Warning, TEXT("UAbilityTask_PlayMontageAdvanced called in Ability %s failed to play montage %s; Task Instance Name %s."), *Ability->GetName(), *GetNameSafe(MontageToPlay),*InstanceName.ToString());
 		if (ShouldBroadcastAbilityTaskDelegates())
 		{
 			OnCancelled.Broadcast(FGameplayTag(), FGameplayEventData());
@@ -465,13 +465,13 @@ void UAbilityTask_PlayMontageAdvanced::BroadcastTagEvent(FAnimNotifyByTagEvent& 
 	// Broadcast the notify
 	switch (TagEvent.NotifyType)
 	{
-	case EPlayMontageByTagNotifyType::Notify:
+	case EPlayMontageAdvancedNotifyType::Notify:
 		OnNotify.Broadcast(TagEvent.Tag, FGameplayEventData());
 		break;
-	case EPlayMontageByTagNotifyType::NotifyStateBegin:
+	case EPlayMontageAdvancedNotifyType::NotifyStateBegin:
 		OnNotifyStateBegin.Broadcast(TagEvent.Tag, FGameplayEventData());
 		break;
-	case EPlayMontageByTagNotifyType::NotifyStateEnd:
+	case EPlayMontageAdvancedNotifyType::NotifyStateEnd:
 		OnNotifyStateEnd.Broadcast(TagEvent.Tag, FGameplayEventData());						
 		break;
 	}
