@@ -10,8 +10,7 @@
 
 class UGameplayTask_WaitDelay;
 struct FMontageBlendSettings;
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FMontageTagWaitDelegate);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMontageTagWaitEventDelegate, FGameplayTag, EventTag, FGameplayEventData, EventData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FMontageAdvancedWaitEventDelegate, FGameplayTag, EventTag, FGameplayEventData, EventData);
 
 /**
  * Handling for parsing notifies in the montage to be triggered by tags
@@ -113,28 +112,28 @@ class PLAYMONTAGEADVANCED_API UAbilityTask_PlayMontageAdvanced : public UAbility
 	
 public:
 	UPROPERTY(BlueprintAssignable)
-	FMontageTagWaitEventDelegate OnCompleted;
+	FMontageAdvancedWaitEventDelegate OnCompleted;
 
 	UPROPERTY(BlueprintAssignable)
-	FMontageTagWaitEventDelegate OnBlendOut;
+	FMontageAdvancedWaitEventDelegate OnBlendOut;
 
 	UPROPERTY(BlueprintAssignable)
-	FMontageTagWaitEventDelegate OnInterrupted;
+	FMontageAdvancedWaitEventDelegate OnInterrupted;
 
 	UPROPERTY(BlueprintAssignable)
-	FMontageTagWaitEventDelegate OnCancelled;
+	FMontageAdvancedWaitEventDelegate OnCancelled;
 
 	UPROPERTY(BlueprintAssignable)
-	FMontageTagWaitEventDelegate OnEventReceived;
+	FMontageAdvancedWaitEventDelegate OnEventReceived;
 
 	UPROPERTY(BlueprintAssignable)
-	FMontageTagWaitEventDelegate OnNotify;
+	FMontageAdvancedWaitEventDelegate OnNotify;
 
 	UPROPERTY(BlueprintAssignable)
-	FMontageTagWaitEventDelegate OnNotifyStateBegin;
+	FMontageAdvancedWaitEventDelegate OnNotifyStateBegin;
 
 	UPROPERTY(BlueprintAssignable)
-	FMontageTagWaitEventDelegate OnNotifyStateEnd;
+	FMontageAdvancedWaitEventDelegate OnNotifyStateEnd;
 	
 	UFUNCTION()
 	void OnMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);

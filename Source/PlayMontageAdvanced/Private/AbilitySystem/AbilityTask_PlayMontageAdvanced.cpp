@@ -354,8 +354,8 @@ void UAbilityTask_PlayMontageAdvanced::OnDestroy(bool AbilityEnded)
 		}
 	}
 
-	if (UPlayMontageAbilitySystemComponent* ASC = AbilitySystemComponent.IsValid() ?
-		Cast<UPlayMontageAbilitySystemComponent>(AbilitySystemComponent.Get()) : nullptr)
+	if (UAbilitySystemComponent* ASC = AbilitySystemComponent.IsValid() ?
+		Cast<UAbilitySystemComponent>(AbilitySystemComponent.Get()) : nullptr)
 	{
 		ASC->RemoveGameplayEventTagContainerDelegate(EventTags, EventHandle);
 	}
