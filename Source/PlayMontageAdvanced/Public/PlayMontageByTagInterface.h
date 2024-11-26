@@ -4,9 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "PlayMontageAdvancedTypes.h"
 #include "PlayMontageByTagInterface.generated.h"
 
-struct FDrivenMontages;
 struct FGameplayTag;
 
 UINTERFACE()
@@ -18,10 +18,10 @@ class UPlayMontageByTagInterface : public UInterface
 /**
  * 
  */
-class PLAYMONTAGEBYTAG_API IPlayMontageByTagInterface
+class PLAYMONTAGEADVANCED_API IPlayMontageByTagInterface
 {
 	GENERATED_BODY()
 
 public:
-	virtual bool GetAbilityMontagesByTag(const FGameplayTag& MontageTag, UAnimMontage*& DriverMontage, FDrivenMontages& DrivenMontages) const PURE_VIRTUAL(, return false;);
+	virtual bool GetAbilityMontagesByTag(const FGameplayTag& MontageTag, FMontageAdvancedParams& MontageParams) const PURE_VIRTUAL(, return false;);
 };

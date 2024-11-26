@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FPlayMontageByTagModule : public IModuleInterface
+class FPlayMontageAdvancedModule : public IModuleInterface
 {
 public:
 

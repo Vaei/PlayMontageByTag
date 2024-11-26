@@ -69,6 +69,10 @@ Code was used from [GASShooter](https://github.com/tranek/GASShooter/)
 
 ## Changelog
 
+### 1.3.0
+* Refactor to PlayMontageAdvanced
+* Remove dependency on interface, allowing params to be used instead
+
 ### 1.2.0
 * Fix bug where montage wasn't being stopped when ability ends
 * Added support for notify by tag that is processed in the GA itself

@@ -1,16 +1,16 @@
 ﻿// Copyright (c) Jared Taylor. All Rights Reserved
 
 
-#include "PlayTagAbilitySystemComponent.h"
+#include "AbilitySystem/PlayMontageAbilitySystemComponent.h"
 
 #include "AbilitySystemLog.h"
-#include "PlayTagGameplayAbility.h"
+#include "AbilitySystem/PlayMontageGameplayAbility.h"
 #include "Net/UnrealNetwork.h"
 
 // Most of this is from GASShooter and therefore also Copyright 2024 Dan Kestranek.
 // https://github.com/tranek/GASShooter
 
-#include UE_INLINE_GENERATED_CPP_BY_NAME(PlayTagAbilitySystemComponent)
+#include UE_INLINE_GENERATED_CPP_BY_NAME(PlayMontageAbilitySystemComponent)
 
 static TAutoConsoleVariable<float> CVarReplayMontageErrorThreshold(
 	TEXT("AbilitySystem.replay.MontageErrorThreshold"),
@@ -32,14 +32,14 @@ bool FPlayTagGameplayAbilityRepAnimMontage::NetSerialize(FArchive& Ar, UPackageM
 	return true;
 }
 
-void UPlayTagAbilitySystemComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void UPlayMontageAbilitySystemComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	
 	DOREPLIFETIME(ThisClass, RepAnimMontageInfoForMeshes);
 }
 
-bool UPlayTagAbilitySystemComponent::GetShouldTick() const
+bool UPlayMontageAbilitySystemComponent::GetShouldTick() const
 {
 	for (const FGameplayAbilityRepAnimMontageForMesh& RepMontageInfo : RepAnimMontageInfoForMeshes)
 	{
@@ -54,7 +54,7 @@ bool UPlayTagAbilitySystemComponent::GetShouldTick() const
 	return Super::GetShouldTick();
 }
 
-void UPlayTagAbilitySystemComponent::TickComponent(float DeltaTime, ELevelTick TickType,
+void UPlayMontageAbilitySystemComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	FActorComponentTickFunction* ThisTickFunction)
 {
 	if (IsOwnerActorAuthoritative())
@@ -68,12 +68,12 @@ void UPlayTagAbilitySystemComponent::TickComponent(float DeltaTime, ELevelTick T
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-float UPlayTagAbilitySystemComponent::PlayMontageForMesh(UGameplayAbility* AnimatingAbility,
+float UPlayMontageAbilitySystemComponent::PlayMontageForMesh(UGameplayAbility* AnimatingAbility,
 	USkeletalMeshComponent* InMesh, FGameplayAbilityActivationInfo ActivationInfo, UAnimMontage* Montage,
 	float InPlayRate, bool bOverrideBlendIn, const FMontageBlendSettings& BlendInOverride, FName StartSectionName,
 	float StartTimeSeconds, bool bReplicateMontage)
 {
-	UPlayTagGameplayAbility* InAbility = Cast<UPlayTagGameplayAbility>(AnimatingAbility);
+	UPlayMontageGameplayAbility* InAbility = Cast<UPlayMontageGameplayAbility>(AnimatingAbility);
 
 	float Duration = -1.f;
 
@@ -154,7 +154,7 @@ float UPlayTagAbilitySystemComponent::PlayMontageForMesh(UGameplayAbility* Anima
 	return Duration;
 }
 
-float UPlayTagAbilitySystemComponent::PlayMontageSimulatedForMesh(USkeletalMeshComponent* InMesh, UAnimMontage* Montage,
+float UPlayMontageAbilitySystemComponent::PlayMontageSimulatedForMesh(USkeletalMeshComponent* InMesh, UAnimMontage* Montage,
 	float InPlayRate, bool bOverrideBlendIn, const FMontageBlendSettings& BlendInOverride, float StartTimeSeconds, FName
 	StartSectionName)
 {
@@ -176,7 +176,7 @@ float UPlayTagAbilitySystemComponent::PlayMontageSimulatedForMesh(USkeletalMeshC
 	return Duration;
 }
 
-void UPlayTagAbilitySystemComponent::CurrentMontageStopForMesh(USkeletalMeshComponent* InMesh,
+void UPlayMontageAbilitySystemComponent::CurrentMontageStopForMesh(USkeletalMeshComponent* InMesh,
 	float OverrideBlendOutTime)
 {
 	UAnimInstance* AnimInstance = IsValid(InMesh) && InMesh->GetOwner() == AbilityActorInfo->AvatarActor ? InMesh->GetAnimInstance() : nullptr;
@@ -197,7 +197,7 @@ void UPlayTagAbilitySystemComponent::CurrentMontageStopForMesh(USkeletalMeshComp
 	}
 }
 
-void UPlayTagAbilitySystemComponent::StopAllCurrentMontages(float OverrideBlendOutTime)
+void UPlayMontageAbilitySystemComponent::StopAllCurrentMontages(float OverrideBlendOutTime)
 {
 	for (FGameplayAbilityLocalAnimMontageForMesh& GameplayAbilityLocalAnimMontageForMesh : LocalAnimMontageInfoForMeshes)
 	{
@@ -205,7 +205,7 @@ void UPlayTagAbilitySystemComponent::StopAllCurrentMontages(float OverrideBlendO
 	}
 }
 
-void UPlayTagAbilitySystemComponent::StopMontageIfCurrentForMesh(USkeletalMeshComponent* InMesh,
+void UPlayMontageAbilitySystemComponent::StopMontageIfCurrentForMesh(USkeletalMeshComponent* InMesh,
 	const UAnimMontage& Montage, float OverrideBlendOutTime)
 {
 	FGameplayAbilityLocalAnimMontageForMesh& AnimMontageInfo = GetLocalAnimMontageInfoForMesh(InMesh);
@@ -215,9 +215,9 @@ void UPlayTagAbilitySystemComponent::StopMontageIfCurrentForMesh(USkeletalMeshCo
 	}
 }
 
-void UPlayTagAbilitySystemComponent::ClearAnimatingAbilityForAllMeshes(UGameplayAbility* Ability)
+void UPlayMontageAbilitySystemComponent::ClearAnimatingAbilityForAllMeshes(UGameplayAbility* Ability)
 {
-	UPlayTagGameplayAbility* TagAbility = Cast<UPlayTagGameplayAbility>(Ability);
+	UPlayMontageGameplayAbility* TagAbility = Cast<UPlayMontageGameplayAbility>(Ability);
 	for (FGameplayAbilityLocalAnimMontageForMesh& GameplayAbilityLocalAnimMontageForMesh : LocalAnimMontageInfoForMeshes)
 	{
 		if (GameplayAbilityLocalAnimMontageForMesh.LocalMontageInfo.AnimatingAbility == Ability)
@@ -228,7 +228,7 @@ void UPlayTagAbilitySystemComponent::ClearAnimatingAbilityForAllMeshes(UGameplay
 	}
 }
 
-void UPlayTagAbilitySystemComponent::CurrentMontageJumpToSectionForMesh(USkeletalMeshComponent* InMesh,
+void UPlayMontageAbilitySystemComponent::CurrentMontageJumpToSectionForMesh(USkeletalMeshComponent* InMesh,
 	FName SectionName)
 {
 	UAnimInstance* AnimInstance = IsValid(InMesh) && InMesh->GetOwner() == AbilityActorInfo->AvatarActor ? InMesh->GetAnimInstance() : nullptr;
@@ -247,7 +247,7 @@ void UPlayTagAbilitySystemComponent::CurrentMontageJumpToSectionForMesh(USkeleta
 	}
 }
 
-void UPlayTagAbilitySystemComponent::CurrentMontageSetNextSectionNameForMesh(USkeletalMeshComponent* InMesh,
+void UPlayMontageAbilitySystemComponent::CurrentMontageSetNextSectionNameForMesh(USkeletalMeshComponent* InMesh,
 	FName FromSectionName, FName ToSectionName)
 {
 	UAnimInstance* AnimInstance = IsValid(InMesh) && InMesh->GetOwner() == AbilityActorInfo->AvatarActor ? InMesh->GetAnimInstance() : nullptr;
@@ -270,7 +270,7 @@ void UPlayTagAbilitySystemComponent::CurrentMontageSetNextSectionNameForMesh(USk
 	}
 }
 
-void UPlayTagAbilitySystemComponent::CurrentMontageSetPlayRateForMesh(USkeletalMeshComponent* InMesh, float InPlayRate)
+void UPlayMontageAbilitySystemComponent::CurrentMontageSetPlayRateForMesh(USkeletalMeshComponent* InMesh, float InPlayRate)
 {
 	UAnimInstance* AnimInstance = IsValid(InMesh) && InMesh->GetOwner() == AbilityActorInfo->AvatarActor ? InMesh->GetAnimInstance() : nullptr;
 	FGameplayAbilityLocalAnimMontageForMesh& AnimMontageInfo = GetLocalAnimMontageInfoForMesh(InMesh);
@@ -291,7 +291,7 @@ void UPlayTagAbilitySystemComponent::CurrentMontageSetPlayRateForMesh(USkeletalM
 	}
 }
 
-bool UPlayTagAbilitySystemComponent::IsAnimatingAbilityForAnyMesh(const UGameplayAbility* InAbility) const
+bool UPlayMontageAbilitySystemComponent::IsAnimatingAbilityForAnyMesh(const UGameplayAbility* InAbility) const
 {
 	for (FGameplayAbilityLocalAnimMontageForMesh GameplayAbilityLocalAnimMontageForMesh : LocalAnimMontageInfoForMeshes)
 	{
@@ -304,7 +304,7 @@ bool UPlayTagAbilitySystemComponent::IsAnimatingAbilityForAnyMesh(const UGamepla
 	return false;
 }
 
-UGameplayAbility* UPlayTagAbilitySystemComponent::GetAnimatingAbilityFromAnyMesh()
+UGameplayAbility* UPlayMontageAbilitySystemComponent::GetAnimatingAbilityFromAnyMesh()
 {
 	// Only one ability can be animating for all meshes
 	for (FGameplayAbilityLocalAnimMontageForMesh& GameplayAbilityLocalAnimMontageForMesh : LocalAnimMontageInfoForMeshes)
@@ -318,13 +318,13 @@ UGameplayAbility* UPlayTagAbilitySystemComponent::GetAnimatingAbilityFromAnyMesh
 	return nullptr;
 }
 
-UGameplayAbility* UPlayTagAbilitySystemComponent::GetAnimatingAbilityFromMesh(USkeletalMeshComponent* InMesh)
+UGameplayAbility* UPlayMontageAbilitySystemComponent::GetAnimatingAbilityFromMesh(USkeletalMeshComponent* InMesh)
 {
 	FGameplayAbilityLocalAnimMontageForMesh& AnimMontageInfo = GetLocalAnimMontageInfoForMesh(InMesh);
 	return AnimMontageInfo.LocalMontageInfo.AnimatingAbility.IsValid() ? AnimMontageInfo.LocalMontageInfo.AnimatingAbility.Get() : nullptr;
 }
 
-TArray<UAnimMontage*> UPlayTagAbilitySystemComponent::GetCurrentMontages() const
+TArray<UAnimMontage*> UPlayMontageAbilitySystemComponent::GetCurrentMontages() const
 {
 	TArray<UAnimMontage*> Montages;
 
@@ -343,7 +343,7 @@ TArray<UAnimMontage*> UPlayTagAbilitySystemComponent::GetCurrentMontages() const
 	return Montages;
 }
 
-UAnimMontage* UPlayTagAbilitySystemComponent::GetCurrentMontageForMesh(USkeletalMeshComponent* InMesh)
+UAnimMontage* UPlayMontageAbilitySystemComponent::GetCurrentMontageForMesh(USkeletalMeshComponent* InMesh)
 {
 	UAnimInstance* AnimInstance = IsValid(InMesh) && InMesh->GetOwner() == AbilityActorInfo->AvatarActor ? InMesh->GetAnimInstance() : nullptr;
 	FGameplayAbilityLocalAnimMontageForMesh& AnimMontageInfo = GetLocalAnimMontageInfoForMesh(InMesh);
@@ -357,7 +357,7 @@ UAnimMontage* UPlayTagAbilitySystemComponent::GetCurrentMontageForMesh(USkeletal
 	return nullptr;
 }
 
-int32 UPlayTagAbilitySystemComponent::GetCurrentMontageSectionIDForMesh(USkeletalMeshComponent* InMesh)
+int32 UPlayMontageAbilitySystemComponent::GetCurrentMontageSectionIDForMesh(USkeletalMeshComponent* InMesh)
 {
 	UAnimInstance* AnimInstance = IsValid(InMesh) && InMesh->GetOwner() == AbilityActorInfo->AvatarActor ? InMesh->GetAnimInstance() : nullptr;
 	UAnimMontage* CurrentAnimMontage = GetCurrentMontageForMesh(InMesh);
@@ -371,7 +371,7 @@ int32 UPlayTagAbilitySystemComponent::GetCurrentMontageSectionIDForMesh(USkeleta
 	return INDEX_NONE;
 }
 
-FName UPlayTagAbilitySystemComponent::GetCurrentMontageSectionNameForMesh(USkeletalMeshComponent* InMesh)
+FName UPlayMontageAbilitySystemComponent::GetCurrentMontageSectionNameForMesh(USkeletalMeshComponent* InMesh)
 {
 	UAnimInstance* AnimInstance = IsValid(InMesh) && InMesh->GetOwner() == AbilityActorInfo->AvatarActor ? InMesh->GetAnimInstance() : nullptr;
 	UAnimMontage* CurrentAnimMontage = GetCurrentMontageForMesh(InMesh);
@@ -387,7 +387,7 @@ FName UPlayTagAbilitySystemComponent::GetCurrentMontageSectionNameForMesh(USkele
 	return NAME_None;
 }
 
-float UPlayTagAbilitySystemComponent::GetCurrentMontageSectionLengthForMesh(USkeletalMeshComponent* InMesh)
+float UPlayMontageAbilitySystemComponent::GetCurrentMontageSectionLengthForMesh(USkeletalMeshComponent* InMesh)
 {
 	UAnimInstance* AnimInstance = IsValid(InMesh) && InMesh->GetOwner() == AbilityActorInfo->AvatarActor ? InMesh->GetAnimInstance() : nullptr;
 	UAnimMontage* CurrentAnimMontage = GetCurrentMontageForMesh(InMesh);
@@ -418,7 +418,7 @@ float UPlayTagAbilitySystemComponent::GetCurrentMontageSectionLengthForMesh(USke
 	return 0.f;
 }
 
-float UPlayTagAbilitySystemComponent::GetCurrentMontageSectionTimeLeftForMesh(USkeletalMeshComponent* InMesh)
+float UPlayMontageAbilitySystemComponent::GetCurrentMontageSectionTimeLeftForMesh(USkeletalMeshComponent* InMesh)
 {
 	UAnimInstance* AnimInstance = IsValid(InMesh) && InMesh->GetOwner() == AbilityActorInfo->AvatarActor ? InMesh->GetAnimInstance() : nullptr;
 	UAnimMontage* CurrentAnimMontage = GetCurrentMontageForMesh(InMesh);
@@ -432,7 +432,7 @@ float UPlayTagAbilitySystemComponent::GetCurrentMontageSectionTimeLeftForMesh(US
 	return -1.f;
 }
 
-FGameplayAbilityLocalAnimMontageForMesh& UPlayTagAbilitySystemComponent::GetLocalAnimMontageInfoForMesh(
+FGameplayAbilityLocalAnimMontageForMesh& UPlayMontageAbilitySystemComponent::GetLocalAnimMontageInfoForMesh(
 	USkeletalMeshComponent* InMesh)
 {
 	for (FGameplayAbilityLocalAnimMontageForMesh& MontageInfo : LocalAnimMontageInfoForMeshes)
@@ -448,7 +448,7 @@ FGameplayAbilityLocalAnimMontageForMesh& UPlayTagAbilitySystemComponent::GetLoca
 	return LocalAnimMontageInfoForMeshes.Last();
 }
 
-FGameplayAbilityRepAnimMontageForMesh& UPlayTagAbilitySystemComponent::GetGameplayAbilityRepAnimMontageForMesh(
+FGameplayAbilityRepAnimMontageForMesh& UPlayMontageAbilitySystemComponent::GetGameplayAbilityRepAnimMontageForMesh(
 	USkeletalMeshComponent* InMesh)
 {
 	for (FGameplayAbilityRepAnimMontageForMesh& RepMontageInfo : RepAnimMontageInfoForMeshes)
@@ -464,7 +464,7 @@ FGameplayAbilityRepAnimMontageForMesh& UPlayTagAbilitySystemComponent::GetGamepl
 	return RepAnimMontageInfoForMeshes.Last();
 }
 
-void UPlayTagAbilitySystemComponent::OnPredictiveMontageRejectedForMesh(USkeletalMeshComponent* InMesh,
+void UPlayMontageAbilitySystemComponent::OnPredictiveMontageRejectedForMesh(USkeletalMeshComponent* InMesh,
 	UAnimMontage* PredictiveMontage)
 {
 	static constexpr float MONTAGE_PREDICTION_REJECT_FADETIME = 0.25f;
@@ -480,14 +480,14 @@ void UPlayTagAbilitySystemComponent::OnPredictiveMontageRejectedForMesh(USkeleta
 	}
 }
 
-void UPlayTagAbilitySystemComponent::AnimMontage_UpdateReplicatedDataForMesh(USkeletalMeshComponent* InMesh)
+void UPlayMontageAbilitySystemComponent::AnimMontage_UpdateReplicatedDataForMesh(USkeletalMeshComponent* InMesh)
 {
 	check(IsOwnerActorAuthoritative());
 
 	AnimMontage_UpdateReplicatedDataForMesh(GetGameplayAbilityRepAnimMontageForMesh(InMesh));
 }
 
-void UPlayTagAbilitySystemComponent::AnimMontage_UpdateReplicatedDataForMesh(
+void UPlayMontageAbilitySystemComponent::AnimMontage_UpdateReplicatedDataForMesh(
 	FGameplayAbilityRepAnimMontageForMesh& OutRepAnimMontageInfo)
 {
 	UAnimInstance* AnimInstance = IsValid(OutRepAnimMontageInfo.Mesh) && OutRepAnimMontageInfo.Mesh->GetOwner() 
@@ -544,13 +544,13 @@ void UPlayTagAbilitySystemComponent::AnimMontage_UpdateReplicatedDataForMesh(
 	}
 }
 
-void UPlayTagAbilitySystemComponent::AnimMontage_UpdateForcedPlayFlagsForMesh(
+void UPlayMontageAbilitySystemComponent::AnimMontage_UpdateForcedPlayFlagsForMesh(
 	FGameplayAbilityRepAnimMontageForMesh& OutRepAnimMontageInfo)
 {
 	FGameplayAbilityLocalAnimMontageForMesh& AnimMontageInfo = GetLocalAnimMontageInfoForMesh(OutRepAnimMontageInfo.Mesh);
 }
 
-void UPlayTagAbilitySystemComponent::OnRep_ReplicatedAnimMontageForMesh()
+void UPlayMontageAbilitySystemComponent::OnRep_ReplicatedAnimMontageForMesh()
 {
 	for (FGameplayAbilityRepAnimMontageForMesh& NewRepMontageInfoForMesh : RepAnimMontageInfoForMeshes)
 	{
@@ -684,13 +684,13 @@ void UPlayTagAbilitySystemComponent::OnRep_ReplicatedAnimMontageForMesh()
 	}
 }
 
-bool UPlayTagAbilitySystemComponent::IsReadyForReplicatedMontageForMesh()
+bool UPlayMontageAbilitySystemComponent::IsReadyForReplicatedMontageForMesh()
 {
 	/** Children may want to override this for additional checks (e.g, "has skin been applied") */
 	return true;
 }
 
-void UPlayTagAbilitySystemComponent::ServerCurrentMontageSetNextSectionNameForMesh_Implementation(
+void UPlayMontageAbilitySystemComponent::ServerCurrentMontageSetNextSectionNameForMesh_Implementation(
 	USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, float ClientPosition, FName SectionName,
 	FName NextSectionName)
 {
@@ -727,14 +727,14 @@ void UPlayTagAbilitySystemComponent::ServerCurrentMontageSetNextSectionNameForMe
 	}
 }
 
-bool UPlayTagAbilitySystemComponent::ServerCurrentMontageSetNextSectionNameForMesh_Validate(
+bool UPlayMontageAbilitySystemComponent::ServerCurrentMontageSetNextSectionNameForMesh_Validate(
 	USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, float ClientPosition, FName SectionName,
 	FName NextSectionName)
 {
 	return true;
 }
 
-void UPlayTagAbilitySystemComponent::ServerCurrentMontageJumpToSectionNameForMesh_Implementation(
+void UPlayMontageAbilitySystemComponent::ServerCurrentMontageJumpToSectionNameForMesh_Implementation(
 	USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, FName SectionName)
 {
 	UAnimInstance* AnimInstance = IsValid(InMesh) && InMesh->GetOwner() == AbilityActorInfo->AvatarActor ? InMesh->GetAnimInstance() : nullptr;
@@ -757,13 +757,13 @@ void UPlayTagAbilitySystemComponent::ServerCurrentMontageJumpToSectionNameForMes
 	}
 }
 
-bool UPlayTagAbilitySystemComponent::ServerCurrentMontageJumpToSectionNameForMesh_Validate(
+bool UPlayMontageAbilitySystemComponent::ServerCurrentMontageJumpToSectionNameForMesh_Validate(
 	USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, FName SectionName)
 {
 	return true;
 }
 
-void UPlayTagAbilitySystemComponent::ServerCurrentMontageSetPlayRateForMesh_Implementation(
+void UPlayMontageAbilitySystemComponent::ServerCurrentMontageSetPlayRateForMesh_Implementation(
 	USkeletalMeshComponent* InMesh, UAnimMontage* ClientAnimMontage, float InPlayRate)
 {
 	UAnimInstance* AnimInstance = IsValid(InMesh) && InMesh->GetOwner() == AbilityActorInfo->AvatarActor ? InMesh->GetAnimInstance() : nullptr;
@@ -786,7 +786,7 @@ void UPlayTagAbilitySystemComponent::ServerCurrentMontageSetPlayRateForMesh_Impl
 	}
 }
 
-bool UPlayTagAbilitySystemComponent::ServerCurrentMontageSetPlayRateForMesh_Validate(USkeletalMeshComponent* InMesh,
+bool UPlayMontageAbilitySystemComponent::ServerCurrentMontageSetPlayRateForMesh_Validate(USkeletalMeshComponent* InMesh,
 	UAnimMontage* ClientAnimMontage, float InPlayRate)
 {
 	return true;

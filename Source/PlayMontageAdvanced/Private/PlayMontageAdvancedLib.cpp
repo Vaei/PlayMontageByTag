@@ -1,14 +1,14 @@
 ﻿// Copyright (c) Jared Taylor. All Rights Reserved
 
 
-#include "PlayMontageByTagLib.h"
+#include "PlayMontageAdvancedLib.h"
 
 #include "AbilitySystemComponent.h"
-#include "PlayMontageByTagTypes.h"
+#include "PlayMontageAdvancedTypes.h"
 
-#include UE_INLINE_GENERATED_CPP_BY_NAME(PlayMontageByTagLib)
+#include UE_INLINE_GENERATED_CPP_BY_NAME(PlayMontageAdvancedLib)
 
-float UPlayMontageByTagLib::GetMontagePlayRateScaledByDuration(const UAnimMontage* Montage, float Duration)
+float UPlayMontageAdvancedLib::GetMontagePlayRateScaledByDuration(const UAnimMontage* Montage, float Duration)
 {
 	if (Montage && Duration > 0.f)
 	{
@@ -17,14 +17,14 @@ float UPlayMontageByTagLib::GetMontagePlayRateScaledByDuration(const UAnimMontag
 	return 1.f;
 }
 
-bool UPlayMontageByTagLib::ShouldPlayLocalDrivenMontages(const AActor* AvatarActor)
+bool UPlayMontageAdvancedLib::ShouldPlayLocalDrivenMontages(const AActor* AvatarActor)
 {
 	const APawn* Pawn = AvatarActor ? Cast<APawn>(AvatarActor) : nullptr;
 	APlayerController* PlayerController = Pawn ? Pawn->GetLocalViewingPlayerController() : nullptr;
 	return PlayerController != nullptr;
 }
 
-void UPlayMontageByTagLib::PlayDrivenMontage(float Duration, float Rate, const FName& StartSection,
+void UPlayMontageAdvancedLib::PlayDrivenMontage(float Duration, float Rate, const FName& StartSection,
 	const FDrivenMontagePair& Montage)
 {
 	if (!Montage.Montage)
@@ -46,7 +46,7 @@ void UPlayMontageByTagLib::PlayDrivenMontage(float Duration, float Rate, const F
 	}
 }
 
-void UPlayMontageByTagLib::PlayDrivenMontages(const AActor* AvatarActor, const FDrivenMontages& DrivenMontages,
+void UPlayMontageAdvancedLib::PlayDrivenMontages(const AActor* AvatarActor, const FDrivenMontages& DrivenMontages,
 	float Duration, float Rate, const FName& StartSection)
 {
 	for (const auto& Montage : DrivenMontages.DrivenMontages)
@@ -66,7 +66,7 @@ void UPlayMontageByTagLib::PlayDrivenMontages(const AActor* AvatarActor, const F
 	}
 }
 
-bool UPlayMontageByTagLib::CanStopCurrentMontage(const TWeakObjectPtr<UAbilitySystemComponent>& AbilitySystemComponent,
+bool UPlayMontageAdvancedLib::CanStopCurrentMontage(const TWeakObjectPtr<UAbilitySystemComponent>& AbilitySystemComponent,
 	const TObjectPtr<UGameplayAbility>& Ability)
 {
 	UAbilitySystemComponent* ASC = AbilitySystemComponent.Get();
@@ -79,7 +79,7 @@ bool UPlayMontageByTagLib::CanStopCurrentMontage(const TWeakObjectPtr<UAbilitySy
 	return bShouldStopMontage;
 }
 
-void UPlayMontageByTagLib::StopMontage(float BlendOutTime, const FDrivenMontagePair& Montage)
+void UPlayMontageAdvancedLib::StopMontage(float BlendOutTime, const FDrivenMontagePair& Montage)
 {
 	if (!Montage.Montage)
 	{
@@ -93,7 +93,7 @@ void UPlayMontageByTagLib::StopMontage(float BlendOutTime, const FDrivenMontageP
 	}
 }
 
-void UPlayMontageByTagLib::StopDrivenMontages(const AActor* AvatarActor, const FDrivenMontages& DrivenMontages,
+void UPlayMontageAdvancedLib::StopDrivenMontages(const AActor* AvatarActor, const FDrivenMontages& DrivenMontages,
 	float BlendOutTime)
 {
 	for (const auto& Montage : DrivenMontages.DrivenMontages)

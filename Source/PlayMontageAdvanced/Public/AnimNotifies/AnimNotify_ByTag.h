@@ -4,17 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
-#include "PlayMontageByTagTags.h"
-#include "PlayMontageByTagTypes.h"
-#include "Animation/AnimNotifies/AnimNotifyState.h"
-#include "AnimNotifyState_ByTag.generated.h"
+#include "PlayMontageTags.h"
+#include "PlayMontageAdvancedTypes.h"
+#include "Animation/AnimNotifies/AnimNotify.h"
+#include "AnimNotify_ByTag.generated.h"
 
 /**
  * Does nothing on its own
- * Parsed by PlayMontageByTag to provide a callback
+ * Parsed by PlayMontageAdvanced to provide a callback
  */
 UCLASS()
-class PLAYMONTAGEBYTAG_API UAnimNotifyState_ByTag : public UAnimNotifyState
+class PLAYMONTAGEADVANCED_API UAnimNotify_ByTag : public UAnimNotify
 {
 	GENERATED_BODY()
 
@@ -25,13 +25,9 @@ public:
 
 	/** Ensure that notifies are triggered if the montage aborts before they're reached when aborted due to these conditions */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=AnimNotify)
-	TArray<EPlayMontageByTagEventType> EnsureTriggerNotify = {};
+	TArray<EPlayMontageAdvancedEventType> EnsureTriggerNotify = {};
 
-	/** Ensure that the end state is reached if the notify was triggered */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=AnimNotify)
-	bool bEnsureEndStateIfTriggered = true;
-	
-	UAnimNotifyState_ByTag()
+	UAnimNotify_ByTag()
 	{
 #if WITH_EDITORONLY_DATA
 		bShouldFireInEditor = false;

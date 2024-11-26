@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
-#include "PlayTagAbilitySystemComponent.generated.h"
+#include "PlayMontageAbilitySystemComponent.generated.h"
 
 // Most of this is from GASShooter and therefore also Copyright 2024 Dan Kestranek.
 // https://github.com/tranek/GASShooter
@@ -13,7 +13,7 @@
  * Data about montages that were played locally (all montages in case of server. predictive montages in case of client). Never replicated directly.
  */
 USTRUCT()
-struct PLAYMONTAGEBYTAG_API FGameplayAbilityLocalAnimMontageForMesh
+struct PLAYMONTAGEADVANCED_API FGameplayAbilityLocalAnimMontageForMesh
 {
 	GENERATED_BODY();
 
@@ -35,7 +35,7 @@ struct PLAYMONTAGEBYTAG_API FGameplayAbilityLocalAnimMontageForMesh
 };
 
 USTRUCT()
-struct PLAYMONTAGEBYTAG_API FPlayTagGameplayAbilityRepAnimMontage : public FGameplayAbilityRepAnimMontage
+struct PLAYMONTAGEADVANCED_API FPlayTagGameplayAbilityRepAnimMontage : public FGameplayAbilityRepAnimMontage
 {
 	GENERATED_BODY()
 
@@ -67,7 +67,7 @@ struct TStructOpsTypeTraits<FPlayTagGameplayAbilityRepAnimMontage> : public TStr
  * Data about montages that is replicated to simulated clients.
  */
 USTRUCT()
-struct PLAYMONTAGEBYTAG_API FGameplayAbilityRepAnimMontageForMesh
+struct PLAYMONTAGEADVANCED_API FGameplayAbilityRepAnimMontageForMesh
 {
 	GENERATED_BODY();
 
@@ -84,7 +84,7 @@ struct PLAYMONTAGEBYTAG_API FGameplayAbilityRepAnimMontageForMesh
 };
 
 UCLASS(ClassGroup=(AbilitySystem), meta=(BlueprintSpawnableComponent))
-class PLAYMONTAGEBYTAG_API UPlayTagAbilitySystemComponent : public UAbilitySystemComponent
+class PLAYMONTAGEADVANCED_API UPlayMontageAbilitySystemComponent : public UAbilitySystemComponent
 {
 	GENERATED_BODY()
 

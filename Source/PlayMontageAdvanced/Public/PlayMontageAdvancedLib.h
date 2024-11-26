@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
-#include "PlayMontageByTagLib.generated.h"
+#include "PlayMontageAdvancedLib.generated.h"
 
 class UGameplayAbility;
 class UAbilitySystemComponent;
@@ -14,7 +14,7 @@ struct FDrivenMontagePair;
  * 
  */
 UCLASS()
-class PLAYMONTAGEBYTAG_API UPlayMontageByTagLib : public UBlueprintFunctionLibrary
+class PLAYMONTAGEADVANCED_API UPlayMontageAdvancedLib : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 

@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class PlayMontageByTag : ModuleRules
+public class PlayMontageAdvanced : ModuleRules
 {
-	public PlayMontageByTag(ReadOnlyTargetRules Target) : base(Target)
+	public PlayMontageAdvanced(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 

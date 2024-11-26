@@ -1,9 +1,9 @@
 ﻿{
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "1.2.0",
-	"FriendlyName": "PlayMontageByTag",
-	"Description": "Adds PlayMontageByTagAndWait ability task nodes that can play any number of montages on any number of meshes and keep them synced.",
+	"VersionName": "1.3.0",
+	"FriendlyName": "PlayMontageAdvanced",
+	"Description": "Adds PlayMontageAdvancedAndWait & PlayMontageByTagAndWait ability task nodes that can play any number of montages on any number of meshes and keep them synced.",
 	"Category": "Animation",
 	"CreatedBy": "Jared Taylor (Vaei)",
 	"CreatedByURL": "",
@@ -15,14 +15,9 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "PlayMontageByTag",
+			"Name": "PlayMontageAdvanced",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		},
-		{
-			"Name": "PlayMontageByTagNodes",
-			"Type": "UncookedOnly",
-			"LoadingPhase": "PostEngineInit"
+			"LoadingPhase": "PreDefault"
 		}
 	],
 	"Plugins": [

@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
-#include "PlayTagGameplayAbility.generated.h"
+#include "PlayMontageGameplayAbility.generated.h"
 
 // Most of this is from GASShooter and therefore also Copyright 2024 Dan Kestranek.
 // https://github.com/tranek/GASShooter
 
 USTRUCT()
-struct PLAYMONTAGEBYTAG_API FAbilityMeshMontage
+struct PLAYMONTAGEADVANCED_API FAbilityMeshMontage
 {
 	GENERATED_BODY()
 
@@ -31,7 +31,7 @@ struct PLAYMONTAGEBYTAG_API FAbilityMeshMontage
  * 
  */
 UCLASS()
-class PLAYMONTAGEBYTAG_API UPlayTagGameplayAbility : public UGameplayAbility
+class PLAYMONTAGEADVANCED_API UPlayMontageGameplayAbility : public UGameplayAbility
 {
 	GENERATED_BODY()
 
