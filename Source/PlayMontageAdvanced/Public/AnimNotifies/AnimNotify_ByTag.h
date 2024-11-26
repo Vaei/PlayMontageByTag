@@ -46,6 +46,6 @@ public:
 	
 	virtual FString GetNotifyName_Implementation() const override
 	{
-		return "ByTag: " + NotifyTag.ToString();
+		return "Tag: " + NotifyTag.ToString();
 	}
 };
