@@ -1,14 +1,16 @@
-# Play Montage By Tag
+# Play Montage Advanced
 
-Provides the ability task node `Play Montage by Tag and Wait` to play multiple montages on multiple meshes using only an `FGameplayTag` and `IPlayMontageByTagInterface::GetAbilityMontagesByTag`.
+Provides the ability task node `Play Montage Advanced and Wait` to play multiple montages on multiple meshes.
 
 Supports:
  * Montage Replication
  * Event Tags
+ * Psuedo Notifies that are much more reliable than anim based notifies
  * Override blend-in settings programmatically
  * Driver and Driven montages (Driven montages can match the animation duration of the Driver montage)
 
-If you want to use blueprint, you need to add this manually by adding a `BlueprintImplementableEvent` that `IPlayMontageByTagInterface::GetAbilityMontagesByTag` calls, otherwise C++ is required.
+> [!TIP]
+> If you want to use the interface version with blueprint, you need to add this manually by adding a `BlueprintImplementableEvent` that `IPlayMontageByTagInterface::GetAbilityMontagesByTag` calls, otherwise C++ is required.
 
 ![node](https://github.com/Vaei/repo_files/blob/main/PlayMontageByTag/node.png)
 
@@ -16,16 +18,19 @@ If you want to use blueprint, you need to add this manually by adding a `Bluepri
 
 ### Project
 
-You will need to include `"PlayMontageByTag"` in both your .uproject and your `Build.cs` `PublicDependencyModuleNames`
+You will need to include `"PlayMontageAdvanced"` in both your .uproject and your `Build.cs` `PublicDependencyModuleNames`
 
 
 ### Ability System
 
-Either use `UPlayTagAbilitySystemComponent` or derive your own `UAbilitySystemComponent` from it.
+Either use `UPlayMontageAbilitySystemComponent` or derive your own `UAbilitySystemComponent` from it.
 
-Derive your gameplay abilities from `UPlayTagGameplayAbility`.
+Derive your gameplay abilities from `UPlayMontageGameplayAbility`.
 
-### Actor
+### Optional Actor Interface
+
+> [!IMPORTANT]
+> Only required if using the interface option, with `MontageTag` on the node
 
 Implement the `IPlayMontageByTagInterface` interface to your Avatar Actor
 
@@ -60,7 +65,7 @@ bool UPlayMontageByTagLib::ShouldPlayLocalDrivenMontages(const AActor* AvatarAct
 }
 ```
 
-Now you can add a `PlayMontageByTagAndWait` node to your ability blueprint and it should work.
+Now you can add a `PlayMontageAdvancedAndWait` node to your ability blueprint and it should work.
 
 Your next step will be to pass in a `FGameplayTag` for `MontageTag` and factor that in for `GetAbilityMontagesByTag`. For example `MontageTag.Weapon.SMG.Reload`.
 
